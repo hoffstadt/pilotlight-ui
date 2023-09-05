@@ -13,13 +13,13 @@ Index of this file:
 // [SECTION] context
 // [SECTION] enums
 // [SECTION] math
+// [SECTION] stretchy buffer internal
+// [SECTION] stretchy buffer
 // [SECTION] internal structs
 // [SECTION] plUiStorage
 // [SECTION] plUiWindow
 // [SECTION] plUiContext
 // [SECTION] internal api
-// [SECTION] stretchy buffer
-// [SECTION] stretchy buffer internal
 */
 
 //-----------------------------------------------------------------------------
@@ -295,6 +295,136 @@ static inline plRect pl_rect_move_start_y  (const plRect* ptRect, float fY)     
 #define PL_IO_VEC2_SUBTRACT(v1, v2) (plVec2){ (v1).x - (v2).x, (v1).y - (v2).y}
 #define PL_IO_VEC2(v1, v2) (plVec2){(v1), (v2)}
 #define PL_IO_MAX(x, y) (x) > (y) ? (x) : (y)
+
+//-----------------------------------------------------------------------------
+// [SECTION] stretchy buffer internal
+//-----------------------------------------------------------------------------
+
+#define pl__ui_sb_header(buf) ((plUiSbHeader_*)(((char*)(buf)) - sizeof(plUiSbHeader_)))
+#define pl__ui_sb_may_grow(buf, s, n, m, X, Y) pl__ui_sb_may_grow_((void**)&(buf), (s), (n), (m), __FILE__, __LINE__)
+
+typedef struct
+{
+    uint32_t uSize;
+    uint32_t uCapacity;
+} plUiSbHeader_;
+
+static void
+pl__ui_sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems, const char* pcFile, int iLine)
+{
+
+    plUiSbHeader_* ptOldHeader = pl__ui_sb_header(*ptrBuffer);
+
+    const size_t szNewSize = (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_);
+    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine); //-V592
+    memset(ptNewHeader, 0, (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_));
+    if(ptNewHeader)
+    {
+        ptNewHeader->uSize = ptOldHeader->uSize;
+        ptNewHeader->uCapacity = ptOldHeader->uCapacity + (uint32_t)szNewItems;
+        memcpy(&ptNewHeader[1], *ptrBuffer, ptOldHeader->uSize * szElementSize);
+        PL_FREE(ptOldHeader);
+        *ptrBuffer = &ptNewHeader[1];
+    }
+}
+
+static void
+pl__ui_sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity, const char* pcFile, int iLine)
+{
+    if(*ptrBuffer)
+    {   
+        plUiSbHeader_* ptOriginalHeader = pl__ui_sb_header(*ptrBuffer);
+        if(ptOriginalHeader->uSize + szNewItems > ptOriginalHeader->uCapacity)
+        {
+            pl__ui_sb_grow(ptrBuffer, szElementSize, szNewItems, pcFile, iLine);
+        }
+    }
+    else // first run
+    {
+        const size_t szNewSize = szMinCapacity * szElementSize + sizeof(plUiSbHeader_);
+        plUiSbHeader_* ptHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine);
+        memset(ptHeader, 0, szMinCapacity * szElementSize + sizeof(plUiSbHeader_));
+        if(ptHeader)
+        {
+            *ptrBuffer = &ptHeader[1]; 
+            ptHeader->uSize = 0u;
+            ptHeader->uCapacity = (uint32_t)szMinCapacity;
+        }
+    }     
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] stretchy buffer
+//-----------------------------------------------------------------------------
+
+#define pl_sb_capacity(buf) \
+    ((buf) ? pl__ui_sb_header((buf))->uCapacity : 0u)
+
+#define pl_sb_size(buf) \
+    ((buf) ? pl__ui_sb_header((buf))->uSize : 0u)
+
+#define pl_sb_pop(buf) \
+    (buf)[--pl__ui_sb_header((buf))->uSize]
+
+#define pl_sb_pop_n(buf, n) \
+    pl__ui_sb_header((buf))->uSize-=(n)
+
+#define pl_sb_top(buf) \
+    ((buf)[pl__ui_sb_header((buf))->uSize-1])
+
+#define pl_sb_last(buf) \
+    pl_sb_top((buf))
+
+#define pl_sb_free(buf) \
+    if((buf)){ PL_FREE(pl__ui_sb_header(buf));} (buf) = NULL;
+
+#define pl_sb_reset(buf) \
+    if((buf)){ pl__ui_sb_header((buf))->uSize = 0u;}
+
+#define pl_sb_back(buf) \
+    pl_sb_top((buf))
+
+#define pl_sb_end(buf) \
+    ((buf) ? (buf) + pl__ui_sb_header((buf))->uSize : (buf))
+
+#define pl_sb_add_n(buf, n) \
+    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), pl__ui_sb_header(buf)->uSize - (n)) : pl_sb_size(buf))
+
+#define pl_sb_add(buf) \
+    pl_sb_add_n((buf), 1)
+
+#define pl_sb_add_ptr_n(buf, n) \
+    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), &(buf)[pl__ui_sb_header(buf)->uSize - (n)]) : (buf))
+
+#define pl_sb_add_ptr(buf, n) \
+    pl_sb_add_ptr_n((buf), 1)
+
+#define pl_sb_push(buf, v) \
+    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), 1, 8, __FILE__, __LINE__), (buf)[pl__ui_sb_header((buf))->uSize++] = (v))
+
+#define pl_sb_reserve(buf, n) \
+    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__))
+
+#define pl_sb_resize(buf, n) \
+    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), pl__ui_sb_header((buf))->uSize = (n))
+
+#define pl_sb_del_n(buf, i, n) \
+    (memmove(&(buf)[i], &(buf)[(i) + (n)], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))), pl__ui_sb_header(buf)->uSize -= (n))
+
+#define pl_sb_del(buf, i) \
+    pl_sb_del_n((buf), (i), 1)
+
+#define pl_sb_del_swap(buf, i) \
+    ((buf)[i] = pl_sb_last(buf), pl__ui_sb_header(buf)->uSize -= 1)
+
+#define pl_sb_insert_n(buf, i, n) \
+    (pl_sb_add_n((buf), (n)), memmove(&(buf)[(i) + (n)], &(buf)[i], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))))
+
+#define pl_sb_insert(buf, i, v) \
+    (pl_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
+
+#define pl_sb_sprintf(buf, pcFormat, ...) \
+    pl__ui_sb_sprintf(&(buf), (pcFormat), __VA_ARGS__)
 
 //-----------------------------------------------------------------------------
 // [SECTION] internal structs
@@ -695,155 +825,58 @@ pl_str_hash(const char* pcData, size_t szDataSize, uint32_t uSeed)
     return ~uCrc;
 }
 
-//-----------------------------------------------------------------------------
-// [SECTION] stretchy buffer
-//-----------------------------------------------------------------------------
-
-#define pl_sb_capacity(buf) \
-    ((buf) ? pl__ui_sb_header((buf))->uCapacity : 0u)
-
-#define pl_sb_size(buf) \
-    ((buf) ? pl__ui_sb_header((buf))->uSize : 0u)
-
-#define pl_sb_pop(buf) \
-    (buf)[--pl__ui_sb_header((buf))->uSize]
-
-#define pl_sb_pop_n(buf, n) \
-    pl__ui_sb_header((buf))->uSize-=(n)
-
-#define pl_sb_top(buf) \
-    ((buf)[pl__ui_sb_header((buf))->uSize-1])
-
-#define pl_sb_last(buf) \
-    pl_sb_top((buf))
-
-#define pl_sb_free(buf) \
-    if((buf)){ PL_FREE(pl__ui_sb_header(buf));} (buf) = NULL;
-
-#define pl_sb_reset(buf) \
-    if((buf)){ pl__ui_sb_header((buf))->uSize = 0u;}
-
-#define pl_sb_back(buf) \
-    pl_sb_top((buf))
-
-#define pl_sb_end(buf) \
-    ((buf) ? (buf) + pl__ui_sb_header((buf))->uSize : (buf))
-
-#define pl_sb_add_n(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), pl__ui_sb_header(buf)->uSize - (n)) : pl_sb_size(buf))
-
-#define pl_sb_add(buf) \
-    pl_sb_add_n((buf), 1)
-
-#define pl_sb_add_ptr_n(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), &(buf)[pl__ui_sb_header(buf)->uSize - (n)]) : (buf))
-
-#define pl_sb_add_ptr(buf, n) \
-    pl_sb_add_ptr_n((buf), 1)
-
-#define pl_sb_push(buf, v) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), 1, 8, __FILE__, __LINE__), (buf)[pl__ui_sb_header((buf))->uSize++] = (v))
-
-#define pl_sb_reserve(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__))
-
-#define pl_sb_resize(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), pl__ui_sb_header((buf))->uSize = (n))
-
-#define pl_sb_del_n(buf, i, n) \
-    (memmove(&(buf)[i], &(buf)[(i) + (n)], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))), pl__ui_sb_header(buf)->uSize -= (n))
-
-#define pl_sb_del(buf, i) \
-    pl_sb_del_n((buf), (i), 1)
-
-#define pl_sb_del_swap(buf, i) \
-    ((buf)[i] = pl_sb_last(buf), pl__ui_sb_header(buf)->uSize -= 1)
-
-#define pl_sb_insert_n(buf, i, n) \
-    (pl_sb_add_n((buf), (n)), memmove(&(buf)[(i) + (n)], &(buf)[i], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))))
-
-#define pl_sb_insert(buf, i, v) \
-    (pl_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
-
-#define pl_sb_sprintf(buf, pcFormat, ...) \
-    pl__ui_sb_sprintf(&(buf), (pcFormat), __VA_ARGS__)
-
-//-----------------------------------------------------------------------------
-// [SECTION] stretchy buffer internal
-//-----------------------------------------------------------------------------
-
-#define pl__ui_sb_header(buf) ((plUiSbHeader_*)(((char*)(buf)) - sizeof(plUiSbHeader_)))
-#define pl__ui_sb_may_grow(buf, s, n, m, X, Y) pl__ui_sb_may_grow_((void**)&(buf), (s), (n), (m), __FILE__, __LINE__)
-
-typedef struct
+#define pl_string_min(Value1, Value2) ((Value1) > (Value2) ? (Value2) : (Value1))
+static int
+pl_text_char_from_utf8(uint32_t* puOutChars, const char* pcInText, const char* pcTextEnd)
 {
-    uint32_t uSize;
-    uint32_t uCapacity;
-} plUiSbHeader_;
+    static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
+    static const int masks[]  = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
+    static const uint32_t mins[] = { 0x400000, 0, 0x80, 0x800, 0x10000 };
+    static const int shiftc[] = { 0, 18, 12, 6, 0 };
+    static const int shifte[] = { 0, 6, 4, 2, 0 };
+    int len = lengths[*(const unsigned char*)pcInText >> 3];
+    int wanted = len + (len ? 0 : 1);
 
-static void
-pl__ui_sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems, const char* pcFile, int iLine)
-{
+    if (pcTextEnd == NULL)
+        pcTextEnd = pcInText + wanted; // Max length, nulls will be taken into account.
 
-    plUiSbHeader_* ptOldHeader = pl__ui_sb_header(*ptrBuffer);
+    // Copy at most 'len' bytes, stop copying at 0 or past pcTextEnd. Branch predictor does a good job here,
+    // so it is fast even with excessive branching.
+    unsigned char s[4];
+    s[0] = pcInText + 0 < pcTextEnd ? pcInText[0] : 0;
+    s[1] = pcInText + 1 < pcTextEnd ? pcInText[1] : 0;
+    s[2] = pcInText + 2 < pcTextEnd ? pcInText[2] : 0;
+    s[3] = pcInText + 3 < pcTextEnd ? pcInText[3] : 0;
 
-    const size_t szNewSize = (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_);
-    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine); //-V592
-    memset(ptNewHeader, 0, (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_));
-    if(ptNewHeader)
+    // Assume a four-byte character and load four bytes. Unused bits are shifted out.
+    *puOutChars  = (uint32_t)(s[0] & masks[len]) << 18;
+    *puOutChars |= (uint32_t)(s[1] & 0x3f) << 12;
+    *puOutChars |= (uint32_t)(s[2] & 0x3f) <<  6;
+    *puOutChars |= (uint32_t)(s[3] & 0x3f) <<  0;
+    *puOutChars >>= shiftc[len];
+
+    // Accumulate the various error conditions.
+    int e = 0;
+    e  = (*puOutChars < mins[len]) << 6; // non-canonical encoding
+    e |= ((*puOutChars >> 11) == 0x1b) << 7;  // surrogate half?
+    e |= (*puOutChars > 0xFFFF) << 8;  // out of range?
+    e |= (s[1] & 0xc0) >> 2;
+    e |= (s[2] & 0xc0) >> 4;
+    e |= (s[3]       ) >> 6;
+    e ^= 0x2a; // top two bits of each tail byte correct?
+    e >>= shifte[len];
+
+    if (e)
     {
-        ptNewHeader->uSize = ptOldHeader->uSize;
-        ptNewHeader->uCapacity = ptOldHeader->uCapacity + (uint32_t)szNewItems;
-        memcpy(&ptNewHeader[1], *ptrBuffer, ptOldHeader->uSize * szElementSize);
-        PL_FREE(ptOldHeader);
-        *ptrBuffer = &ptNewHeader[1];
+        // No bytes are consumed when *pcInText == 0 || pcInText == pcTextEnd.
+        // One byte is consumed in case of invalid first byte of pcInText.
+        // All available bytes (at most `len` bytes) are consumed on incomplete/invalid second to last bytes.
+        // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
+        wanted = pl_string_min(wanted, !!s[0] + !!s[1] + !!s[2] + !!s[3]);
+        *puOutChars = 0xFFFD;
     }
-}
 
-static void
-pl__ui_sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity, const char* pcFile, int iLine)
-{
-    if(*ptrBuffer)
-    {   
-        plUiSbHeader_* ptOriginalHeader = pl__ui_sb_header(*ptrBuffer);
-        if(ptOriginalHeader->uSize + szNewItems > ptOriginalHeader->uCapacity)
-        {
-            pl__ui_sb_grow(ptrBuffer, szElementSize, szNewItems, pcFile, iLine);
-        }
-    }
-    else // first run
-    {
-        const size_t szNewSize = szMinCapacity * szElementSize + sizeof(plUiSbHeader_);
-        plUiSbHeader_* ptHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine);
-        memset(ptHeader, 0, szMinCapacity * szElementSize + sizeof(plUiSbHeader_));
-        if(ptHeader)
-        {
-            *ptrBuffer = &ptHeader[1]; 
-            ptHeader->uSize = 0u;
-            ptHeader->uCapacity = (uint32_t)szMinCapacity;
-        }
-    }     
-}
-
-static void
-pl__ui_sb_vsprintf(char** ppcBuffer, const char* pcFormat, va_list args)
-{
-    va_list args2;
-    va_copy(args2, args);
-    int32_t n = vsnprintf(NULL, 0, pcFormat, args2);
-    va_end(args2);
-    uint32_t an = pl_sb_size(*ppcBuffer);
-    pl_sb_resize(*ppcBuffer, an + n + 1);
-    vsnprintf(*ppcBuffer + an, n + 1, pcFormat, args);
-}
-
-static void
-pl__ui_sb_sprintf(char** ppcBuffer, const char* pcFormat, ...)
-{
-    va_list args;
-    va_start(args, pcFormat);
-    pl__ui_sb_vsprintf(ppcBuffer, pcFormat, args);
-    va_end(args);
+    return wanted;
 }
 
 #endif // PL_UI_INTERNAL_H

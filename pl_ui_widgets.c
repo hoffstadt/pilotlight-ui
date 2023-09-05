@@ -1456,9 +1456,9 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
                     s += pl_text_char_from_utf8(&c, s, NULL);
                     if (!pl__input_text_filter_character(&c, tFlags))
                         continue;
-                    clipboard_filtered[clipboard_filtered_len++] = (plWChar)c;
+                    clipboard_filtered[clipboard_filtered_len++] = (plWChar)c; //-V522
                 }
-                clipboard_filtered[clipboard_filtered_len] = 0;
+                clipboard_filtered[clipboard_filtered_len] = 0; //-V522
                 if (clipboard_filtered_len > 0) // If everything was filtered, ignore the pasting operation
                 {
                     stb_textedit_paste(ptState, &ptState->tStb, clipboard_filtered, clipboard_filtered_len);

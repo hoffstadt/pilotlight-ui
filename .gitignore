@@ -1,3 +1,7 @@
-
 # directories
+.vs/
 .vscode/
+examples/out/
+
+# debug files
+examples/example_win32_vulkan/*.pdb

@@ -27,6 +27,8 @@ Index of this file:
 
 #include <stdbool.h> // bool
 #include <stdint.h>  // uint*_t
+#include <stdarg.h>  // va list
+#include <stddef.h>  // size_t
 
 //-----------------------------------------------------------------------------
 // [SECTION] forward declarations
