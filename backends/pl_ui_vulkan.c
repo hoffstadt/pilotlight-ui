@@ -22,7 +22,7 @@ Index of this file:
 
 #ifndef PL_VULKAN
     #include <assert.h>
-    #define PL_VULKAN(x) PL_ASSERT(x == VK_SUCCESS)
+    #define PL_VULKAN(x) PL_UI_ASSERT(x == VK_SUCCESS)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -443,7 +443,7 @@ pl_initialize_vulkan(const plVulkanInit* ptInit)
     };
     assert(vkCreateShaderModule(ptVulkanDrawContext->tDevice, &tSdfShdrInfo, NULL, &ptVulkanDrawContext->tSdfShdrStgInfo.module) == VK_SUCCESS);
 
-    pl_sb_resize(ptVulkanDrawContext->sbtBufferInfo, ptVulkanDrawContext->uFramesInFlight);
+    plu_sb_resize(ptVulkanDrawContext->sbtBufferInfo, ptVulkanDrawContext->uFramesInFlight);
 }
 
 void
@@ -455,10 +455,10 @@ pl_new_draw_frame_vulkan(void)
     //-----------------------------------------------------------------------------
     // buffer deletion queue
     //-----------------------------------------------------------------------------
-    pl_sb_reset(ptVulkanDrawContext->sbReturnedBuffersTemp);
+    plu_sb_reset(ptVulkanDrawContext->sbReturnedBuffersTemp);
     if(ptVulkanDrawContext->uBufferDeletionQueueSize > 0u)
     {
-        for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawContext->sbReturnedBuffers); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawContext->sbReturnedBuffers); i++)
         {
             if(ptVulkanDrawContext->sbReturnedBuffers[i].slFreedFrame < (int64_t)ptCtx->frameCount)
             {
@@ -468,22 +468,22 @@ pl_new_draw_frame_vulkan(void)
             }
             else
             {
-                pl_sb_push(ptVulkanDrawContext->sbReturnedBuffersTemp, ptVulkanDrawContext->sbReturnedBuffers[i]);
+                plu_sb_push(ptVulkanDrawContext->sbReturnedBuffersTemp, ptVulkanDrawContext->sbReturnedBuffers[i]);
             }
         }     
     }
 
-    pl_sb_reset(ptVulkanDrawContext->sbReturnedBuffers);
-    for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawContext->sbReturnedBuffersTemp); i++)
-        pl_sb_push(ptVulkanDrawContext->sbReturnedBuffers, ptVulkanDrawContext->sbReturnedBuffersTemp[i]);
+    plu_sb_reset(ptVulkanDrawContext->sbReturnedBuffers);
+    for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawContext->sbReturnedBuffersTemp); i++)
+        plu_sb_push(ptVulkanDrawContext->sbReturnedBuffers, ptVulkanDrawContext->sbReturnedBuffersTemp[i]);
 
     //-----------------------------------------------------------------------------
     // texture deletion queue
     //-----------------------------------------------------------------------------
-    pl_sb_reset(ptVulkanDrawContext->sbReturnedTexturesTemp);
+    plu_sb_reset(ptVulkanDrawContext->sbReturnedTexturesTemp);
     if(ptVulkanDrawContext->uTextureDeletionQueueSize > 0u)
     {
-        for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawContext->sbReturnedTextures); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawContext->sbReturnedTextures); i++)
         {
             if(ptVulkanDrawContext->sbReturnedTextures[i].slFreedFrame < (int64_t)ptCtx->frameCount)
             {
@@ -494,17 +494,17 @@ pl_new_draw_frame_vulkan(void)
             }
             else
             {
-                pl_sb_push(ptVulkanDrawContext->sbReturnedTexturesTemp, ptVulkanDrawContext->sbReturnedTextures[i]);
+                plu_sb_push(ptVulkanDrawContext->sbReturnedTexturesTemp, ptVulkanDrawContext->sbReturnedTextures[i]);
             }
         }     
     }
 
-    pl_sb_reset(ptVulkanDrawContext->sbReturnedTextures);
-    for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawContext->sbReturnedTexturesTemp); i++)
-        pl_sb_push(ptVulkanDrawContext->sbReturnedTextures, ptVulkanDrawContext->sbReturnedTexturesTemp[i]);
+    plu_sb_reset(ptVulkanDrawContext->sbReturnedTextures);
+    for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawContext->sbReturnedTexturesTemp); i++)
+        plu_sb_push(ptVulkanDrawContext->sbReturnedTextures, ptVulkanDrawContext->sbReturnedTexturesTemp[i]);
 
     // reset buffer offsets
-    for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawContext->sbtBufferInfo); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawContext->sbtBufferInfo); i++)
     {
         ptVulkanDrawContext->sbtBufferInfo[i].uVertexBufferOffset = 0;
         ptVulkanDrawContext->sbtBufferInfo[i].uIndexBufferOffset = 0;
@@ -522,7 +522,7 @@ pl_cleanup_vulkan_font_atlas(plFontAtlas* ptAtlas)
         .tDeviceMemory = ptVulkanDrawContext->tFontTextureMemory,
         .slFreedFrame = (int64_t)(ptCtx->frameCount + ptVulkanDrawContext->uImageCount * 2)
     };
-    pl_sb_push(ptVulkanDrawContext->sbReturnedTextures, tReturnTexture);
+    plu_sb_push(ptVulkanDrawContext->sbReturnedTextures, tReturnTexture);
     ptVulkanDrawContext->uTextureDeletionQueueSize++;
 }
 
@@ -537,7 +537,7 @@ pl_submit_vulkan_drawlist(plDrawList* ptDrawlist, float fWidth, float fHeight, V
 void
 pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount)
 {
-    if(pl_sb_size(ptDrawlist->sbVertexBuffer) == 0u)
+    if(plu_sb_size(ptDrawlist->sbVertexBuffer) == 0u)
         return;
 
     plUiContext* ptCtx = pl_get_ui_context();
@@ -546,7 +546,7 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~vertex buffer prep~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // ensure gpu vertex buffer size is adequate
-    const uint32_t uVtxBufSzNeeded = sizeof(plDrawVertex) * pl_sb_size(ptDrawlist->sbVertexBuffer);
+    const uint32_t uVtxBufSzNeeded = sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbVertexBuffer);
     if(uVtxBufSzNeeded == 0)
         return;
 
@@ -561,7 +561,7 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
 
     // vertex GPU data transfer
     unsigned char* pucMappedVertexBufferLocation = tBufferInfo->ucVertexBufferMap;
-    memcpy(&pucMappedVertexBufferLocation[tBufferInfo->uVertexBufferOffset], ptDrawlist->sbVertexBuffer, sizeof(plDrawVertex) * pl_sb_size(ptDrawlist->sbVertexBuffer));
+    memcpy(&pucMappedVertexBufferLocation[tBufferInfo->uVertexBufferOffset], ptDrawlist->sbVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbVertexBuffer));
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~index buffer prep~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -583,17 +583,17 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
     uint32_t uTempIndexBufferOffset = 0u;
     uint32_t globalIdxBufferIndexOffset = 0u;
 
-    for(uint32_t i = 0u; i < pl_sb_size(ptDrawlist->sbSubmittedLayers); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbSubmittedLayers); i++)
     {
         plDrawCommand* ptLastCommand = NULL;
         plDrawLayer* ptLayer = ptDrawlist->sbSubmittedLayers[i];
 
-        memcpy(&pucDestination[uTempIndexBufferOffset], ptLayer->sbIndexBuffer, sizeof(uint32_t) * pl_sb_size(ptLayer->sbIndexBuffer));
+        memcpy(&pucDestination[uTempIndexBufferOffset], ptLayer->sbIndexBuffer, sizeof(uint32_t) * plu_sb_size(ptLayer->sbIndexBuffer));
 
-        uTempIndexBufferOffset += pl_sb_size(ptLayer->sbIndexBuffer)*sizeof(uint32_t);
+        uTempIndexBufferOffset += plu_sb_size(ptLayer->sbIndexBuffer)*sizeof(uint32_t);
 
         // attempt to merge commands
-        for(uint32_t j = 0u; j < pl_sb_size(ptLayer->sbCommandBuffer); j++)
+        for(uint32_t j = 0u; j < plu_sb_size(ptLayer->sbCommandBuffer); j++)
         {
             plDrawCommand* ptLayerCommand = &ptLayer->sbCommandBuffer[j];
             bool bCreateNewCommand = true;
@@ -619,12 +619,12 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
             if(bCreateNewCommand)
             {
                 ptLayerCommand->indexOffset = globalIdxBufferIndexOffset + ptLayerCommand->indexOffset;
-                pl_sb_push(ptDrawlist->sbDrawCommands, *ptLayerCommand);       
+                plu_sb_push(ptDrawlist->sbDrawCommands, *ptLayerCommand);       
                 ptLastCommand = ptLayerCommand;
             }
             
         }    
-        globalIdxBufferIndexOffset += pl_sb_size(ptLayer->sbIndexBuffer);    
+        globalIdxBufferIndexOffset += plu_sb_size(ptLayer->sbIndexBuffer);    
     }
 
     const VkMappedMemoryRange aRange[2] = {
@@ -655,7 +655,7 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
     const float fTranslate[] = {-1.0f, -1.0f};
     bool bSdf = false;
     vkCmdBindPipeline(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, tPipelineEntry->tRegularPipeline); 
-    for(uint32_t i = 0u; i < pl_sb_size(ptDrawlist->sbDrawCommands); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbDrawCommands); i++)
     {
         plDrawCommand cmd = ptDrawlist->sbDrawCommands[i];
 
@@ -670,7 +670,7 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
             bSdf = false;
         }
 
-        if(pl_rect_width(&cmd.tClip) == 0)
+        if(plu_rect_width(&cmd.tClip) == 0)
         {
             const VkRect2D tScissor = {
                 .extent.width = (int32_t) (fWidth * tClipScale.x),
@@ -697,8 +697,8 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
             const VkRect2D tScissor = {
                 .offset.x      = (int32_t) (cmd.tClip.tMin.x < 0 ? 0 : cmd.tClip.tMin.x),
                 .offset.y      = (int32_t) (cmd.tClip.tMin.y < 0 ? 0 : cmd.tClip.tMin.y),
-                .extent.width  = (int32_t)pl_rect_width(&cmd.tClip),
-                .extent.height = (int32_t)pl_rect_height(&cmd.tClip)
+                .extent.width  = (int32_t)plu_rect_width(&cmd.tClip),
+                .extent.height = (int32_t)plu_rect_height(&cmd.tClip)
             };
             vkCmdSetScissor(tCmdBuf, 0, 1, &tScissor);
         }
@@ -731,7 +731,7 @@ pl_cleanup_vulkan(void)
     vkDestroySampler(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tFontSampler, NULL);
     vkDestroyPipelineLayout(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tPipelineLayout, NULL);
 
-    for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawCtx->sbtBufferInfo); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawCtx->sbtBufferInfo); i++)
     {
         vkDestroyBuffer(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbtBufferInfo[i].tVertexBuffer, NULL);
         vkFreeMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbtBufferInfo[i].tVertexMemory, NULL);
@@ -739,7 +739,7 @@ pl_cleanup_vulkan(void)
         vkFreeMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbtBufferInfo[i].tIndexMemory, NULL);
     }
 
-    for(uint32_t i = 0u; i < pl_sb_size(ptVulkanDrawCtx->sbtPipelines); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(ptVulkanDrawCtx->sbtPipelines); i++)
     {
         vkDestroyPipeline(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbtPipelines[i].tRegularPipeline, NULL);
         vkDestroyPipeline(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbtPipelines[i].tSecondaryPipeline, NULL);
@@ -747,7 +747,7 @@ pl_cleanup_vulkan(void)
 
     if(ptVulkanDrawCtx->uBufferDeletionQueueSize > 0u)
     {
-        for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawCtx->sbReturnedBuffers); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawCtx->sbReturnedBuffers); i++)
         {
             vkDestroyBuffer(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbReturnedBuffers[i].tBuffer, NULL);
             vkFreeMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbReturnedBuffers[i].tDeviceMemory, NULL);
@@ -756,7 +756,7 @@ pl_cleanup_vulkan(void)
 
     if(ptVulkanDrawCtx->uTextureDeletionQueueSize > 0u)
     {
-        for(uint32_t i = 0; i < pl_sb_size(ptVulkanDrawCtx->sbReturnedTextures); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptVulkanDrawCtx->sbReturnedTextures); i++)
         {
             vkDestroyImage(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbReturnedTextures[i].tImage, NULL);
             vkDestroyImageView(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->sbReturnedTextures[i].tView, NULL);
@@ -767,11 +767,11 @@ pl_cleanup_vulkan(void)
     vkDestroyCommandPool(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tCmdPool, NULL);
     vkDestroyDescriptorPool(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tDescriptorPool, NULL);
 
-    pl_sb_free(ptVulkanDrawCtx->sbReturnedBuffers);
-    pl_sb_free(ptVulkanDrawCtx->sbReturnedBuffersTemp);
-    pl_sb_free(ptVulkanDrawCtx->sbtBufferInfo);
-    pl_sb_free(ptVulkanDrawCtx->sbtPipelines);
-    pl_sb_free(ptVulkanDrawCtx->sbReturnedTextures);
+    plu_sb_free(ptVulkanDrawCtx->sbReturnedBuffers);
+    plu_sb_free(ptVulkanDrawCtx->sbReturnedBuffersTemp);
+    plu_sb_free(ptVulkanDrawCtx->sbtBufferInfo);
+    plu_sb_free(ptVulkanDrawCtx->sbtPipelines);
+    plu_sb_free(ptVulkanDrawCtx->sbReturnedTextures);
 
     free(ptCtx->tIO.pBackendRendererData);
     ptCtx->tIO.pBackendRendererData = NULL;
@@ -1021,7 +1021,7 @@ pl__grow_vulkan_vertex_buffer(uint32_t uVtxBufSzNeeded, plVulkanBufferInfo* ptBu
             .tDeviceMemory = ptBufferInfo->tVertexMemory,
             .slFreedFrame  = (int64_t)(ptCtx->frameCount + ptVulkanDrawCtx->uFramesInFlight * 2)
         };
-        pl_sb_push(ptVulkanDrawCtx->sbReturnedBuffers, tReturnBuffer);
+        plu_sb_push(ptVulkanDrawCtx->sbReturnedBuffers, tReturnBuffer);
         ptVulkanDrawCtx->uBufferDeletionQueueSize++;
         vkUnmapMemory(ptVulkanDrawCtx->tDevice, ptBufferInfo->tVertexMemory);
     }
@@ -1069,7 +1069,7 @@ pl__grow_vulkan_index_buffer(uint32_t uIdxBufSzNeeded, plVulkanBufferInfo* ptBuf
             .tDeviceMemory = ptBufferInfo->tIndexMemory,
             .slFreedFrame  = (int64_t)(ptCtx->frameCount + ptVulkanDrawCtx->uFramesInFlight * 2)
         };
-        pl_sb_push(ptVulkanDrawCtx->sbReturnedBuffers, tReturnBuffer);
+        plu_sb_push(ptVulkanDrawCtx->sbReturnedBuffers, tReturnBuffer);
         ptVulkanDrawCtx->uBufferDeletionQueueSize++;
         vkUnmapMemory(ptVulkanDrawCtx->tDevice, ptBufferInfo->tIndexMemory);
     }
@@ -1107,7 +1107,7 @@ static plVulkanPipelineEntry*
 pl__get_pipelines(plVulkanDrawContext* ptCtx, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount)
 {
     // return pipeline entry if it exists
-    for(uint32_t i = 0; i < pl_sb_size(ptCtx->sbtPipelines); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptCtx->sbtPipelines); i++)
     {
         if(ptCtx->sbtPipelines[i].tRenderPass == tRenderPass && tMSAASampleCount == ptCtx->sbtPipelines[i].tMSAASampleCount)
             return &ptCtx->sbtPipelines[i];
@@ -1254,7 +1254,7 @@ pl__get_pipelines(plVulkanDrawContext* ptCtx, VkRenderPass tRenderPass, VkSample
     PL_VULKAN(vkCreateGraphicsPipelines(ptCtx->tDevice, VK_NULL_HANDLE, 1, &pipeInfo, NULL, &tEntry.tSecondaryPipeline));
 
     // add to entries
-    pl_sb_push(ptCtx->sbtPipelines, tEntry);
+    plu_sb_push(ptCtx->sbtPipelines, tEntry);
 
-    return &pl_sb_back(ptCtx->sbtPipelines);
+    return &plu_sb_back(ptCtx->sbtPipelines);
 }

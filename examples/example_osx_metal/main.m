@@ -787,7 +787,7 @@ pl__add_osx_tracking_area(NSView* _Nonnull view)
 const char*
 pl__get_clipboard_text(void* user_data_ctx)
 {
-    pl_sb_reset(gtIO->sbcClipboardData);
+    plu_sb_reset(gtIO->sbcClipboardData);
 
     NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
     NSString* available = [pasteboard availableTypeFromArray: [NSArray arrayWithObject:NSPasteboardTypeString]];
@@ -800,7 +800,7 @@ pl__get_clipboard_text(void* user_data_ctx)
 
     const char* string_c = (const char*)[string UTF8String];
     size_t string_len = strlen(string_c);
-    pl_sb_resize(gtIO->sbcClipboardData, (int)string_len + 1);
+    plu_sb_resize(gtIO->sbcClipboardData, (int)string_len + 1);
     strcpy(gtIO->sbcClipboardData, string_c);
     return gtIO->sbcClipboardData;
 }

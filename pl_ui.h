@@ -60,7 +60,7 @@ typedef struct _plFontConfig     plFontConfig;     // configuration for loading 
 typedef struct _plFontAtlas      plFontAtlas;      // atlas for multiple fonts
 
 // character types
-typedef uint16_t plWChar;
+typedef uint16_t plUiWChar;
 
 // plTextureID: used to represent texture for renderer backend
 typedef void* plTextureId;
@@ -809,8 +809,8 @@ typedef struct _plIO
     uint32_t      _uInputEventSize;
     uint32_t      _uInputEventCapacity;
     uint32_t      _uInputEventOverflowCapacity;
-    plWChar*      _sbInputQueueCharacters;
-    plWChar       _tInputQueueSurrogate; 
+    plUiWChar*      _sbInputQueueCharacters;
+    plUiWChar       _tInputQueueSurrogate; 
 
     // main input state
     plVec2 _tMousePos;

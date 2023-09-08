@@ -60,8 +60,8 @@ static char* pl__read_file(const char* file);
 
 // stateful drawing
 #define pl__submit_path(layer, color, thickness)\
-    pl_add_lines((layer), (layer)->sbPath, pl_sb_size((layer)->sbPath) - 1, (color), (thickness));\
-    pl_sb_reset((layer)->sbPath);
+    pl_add_lines((layer), (layer)->sbPath, plu_sb_size((layer)->sbPath) - 1, (color), (thickness));\
+    plu_sb_reset((layer)->sbPath);
 
 #define PL_NORMALIZE2F_OVER_ZERO(VX,VY) \
     { float d2 = (VX) * (VX) + (VY) * (VY); \
@@ -75,7 +75,7 @@ void
 pl_register_drawlist(plDrawList* drawlist)
 {
     memset(drawlist, 0, sizeof(plDrawList));
-    pl_sb_push(gptCtx->sbDrawlists, drawlist);
+    plu_sb_push(gptCtx->sbDrawlists, drawlist);
 }
 
 plDrawLayer*
@@ -86,9 +86,9 @@ pl_request_layer(plDrawList* drawlist, const char* name)
    // check if drawlist has any cached layers
    // which reduces allocations necessary since
    // cached layers' buffers are only reset
-   if(pl_sb_size(drawlist->sbLayerCache) > 0)
+   if(plu_sb_size(drawlist->sbLayerCache) > 0)
    {
-        layer = pl_sb_pop(drawlist->sbLayerCache);
+        layer = plu_sb_pop(drawlist->sbLayerCache);
    }
 
    else // create new layer
@@ -97,7 +97,7 @@ pl_request_layer(plDrawList* drawlist, const char* name)
         layer = malloc(sizeof(plDrawLayer));
         memset(layer, 0, sizeof(plDrawLayer));
         layer->drawlist = drawlist;
-        pl_sb_push(drawlist->sbLayersCreated, layer);
+        plu_sb_push(drawlist->sbLayersCreated, layer);
    }
 
    layer->name = name;
@@ -111,24 +111,24 @@ pl_return_layer(plDrawLayer* layer)
     layer->name = "";
     layer->_lastCommand = NULL;
     layer->vertexCount = 0u;
-    pl_sb_reset(layer->sbCommandBuffer);
-    pl_sb_reset(layer->sbIndexBuffer);
-    pl_sb_reset(layer->sbPath);
-    pl_sb_push(layer->drawlist->sbLayerCache, layer);
+    plu_sb_reset(layer->sbCommandBuffer);
+    plu_sb_reset(layer->sbIndexBuffer);
+    plu_sb_reset(layer->sbPath);
+    plu_sb_push(layer->drawlist->sbLayerCache, layer);
 }
 
 void
 pl_submit_layer(plDrawLayer* layer)
 {
-    pl_sb_push(layer->drawlist->sbSubmittedLayers, layer);
-    layer->drawlist->indexBufferByteSize += pl_sb_size(layer->sbIndexBuffer) * sizeof(uint32_t);
+    plu_sb_push(layer->drawlist->sbSubmittedLayers, layer);
+    layer->drawlist->indexBufferByteSize += plu_sb_size(layer->sbIndexBuffer) * sizeof(uint32_t);
 }
 
 void
 pl_add_line(plDrawLayer* layer, plVec2 p0, plVec2 p1, plVec4 color, float thickness)
 {
-    pl_sb_push(layer->sbPath, p0);
-    pl_sb_push(layer->sbPath, p1);
+    plu_sb_push(layer->sbPath, p0);
+    plu_sb_push(layer->sbPath, p1);
     pl__submit_path(layer, color, thickness);
 }
 
@@ -158,7 +158,7 @@ pl_add_lines(plDrawLayer* layer, plVec2* points, uint32_t count, plVec4 color, f
             pl__add_vec2(     points[i],     pl__mul_vec2_f(normalVector, thickness / 2.0f))
         };
 
-        uint32_t vertexStart = pl_sb_size(layer->drawlist->sbVertexBuffer);
+        uint32_t vertexStart = plu_sb_size(layer->drawlist->sbVertexBuffer);
         pl__add_vertex(layer, cornerPoints[0], color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         pl__add_vertex(layer, cornerPoints[1], color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         pl__add_vertex(layer, cornerPoints[2], color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -192,7 +192,7 @@ pl_add_text_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, plVec4 co
             text += 1;
         else
         {
-            text += pl_text_char_from_utf8(&c, text, NULL);
+            text += plu_text_char_from_utf8(&c, text, NULL);
             if(c == 0) // malformed UTF-8?
                 break;
         }
@@ -210,7 +210,7 @@ pl_add_text_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, plVec4 co
         {
 
             bool glyphFound = false;
-            for(uint32_t i = 0u; i < pl_sb_size(font->config.sbRanges); i++)
+            for(uint32_t i = 0u; i < plu_sb_size(font->config.sbRanges); i++)
             {
                 if (c >= (uint32_t)font->config.sbRanges[i].firstCodePoint && c < (uint32_t)font->config.sbRanges[i].firstCodePoint + (uint32_t)font->config.sbRanges[i].charCount) 
                 {
@@ -253,7 +253,7 @@ pl_add_text_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, plVec4 co
                     {
                         pl__prepare_draw_command(layer, font->parentAtlas->texture, font->config.sdf);
                         pl__reserve_triangles(layer, 6, 4);
-                        uint32_t uVtxStart = pl_sb_size(layer->drawlist->sbVertexBuffer);
+                        uint32_t uVtxStart = plu_sb_size(layer->drawlist->sbVertexBuffer);
                         pl__add_vertex(layer, (plVec2){x0, y0}, color, (plVec2){s0, t0});
                         pl__add_vertex(layer, (plVec2){x1, y0}, color, (plVec2){s1, t0});
                         pl__add_vertex(layer, (plVec2){x1, y1}, color, (plVec2){s1, t1});
@@ -299,7 +299,7 @@ pl_add_text_clipped_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, p
             text += 1;
         else
         {
-            text += pl_text_char_from_utf8(&c, text, NULL);
+            text += plu_text_char_from_utf8(&c, text, NULL);
             if(c == 0) // malformed UTF-8?
                 break;
         }
@@ -317,7 +317,7 @@ pl_add_text_clipped_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, p
         {
 
             bool glyphFound = false;
-            for(uint32_t i = 0u; i < pl_sb_size(font->config.sbRanges); i++)
+            for(uint32_t i = 0u; i < plu_sb_size(font->config.sbRanges); i++)
             {
                 if (c >= (uint32_t)font->config.sbRanges[i].firstCodePoint && c < (uint32_t)font->config.sbRanges[i].firstCodePoint + (uint32_t)font->config.sbRanges[i].charCount) 
                 {
@@ -356,11 +356,11 @@ pl_add_text_clipped_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, p
                     t1 = glyph->v1;
 
                     p.x += glyph->xAdvance * scale;
-                    if(c != ' ' && pl_rect_contains_point(&tClipRect, p))
+                    if(c != ' ' && plu_rect_contains_point(&tClipRect, p))
                     {
                         pl__prepare_draw_command(layer, font->parentAtlas->texture, font->config.sdf);
                         pl__reserve_triangles(layer, 6, 4);
-                        uint32_t uVtxStart = pl_sb_size(layer->drawlist->sbVertexBuffer);
+                        uint32_t uVtxStart = plu_sb_size(layer->drawlist->sbVertexBuffer);
                         pl__add_vertex(layer, (plVec2){x0, y0}, color, (plVec2){s0, t0});
                         pl__add_vertex(layer, (plVec2){x1, y0}, color, (plVec2){s1, t0});
                         pl__add_vertex(layer, (plVec2){x1, y1}, color, (plVec2){s1, t1});
@@ -383,10 +383,10 @@ pl_add_text_clipped_ex(plDrawLayer* layer, plFont* font, float size, plVec2 p, p
 void
 pl_add_triangle(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plVec4 tColor, float fThickness)
 {
-    pl_sb_push(ptLayer->sbPath, tP0);
-    pl_sb_push(ptLayer->sbPath, tP1);
-    pl_sb_push(ptLayer->sbPath, tP2);
-    pl_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP1);
+    plu_sb_push(ptLayer->sbPath, tP2);
+    plu_sb_push(ptLayer->sbPath, tP0);
     pl__submit_path(ptLayer, tColor, fThickness);    
 }
 
@@ -396,7 +396,7 @@ pl_add_triangle_filled(plDrawLayer* layer, plVec2 p0, plVec2 p1, plVec2 p2, plVe
     pl__prepare_draw_command(layer, gptCtx->fontAtlas->texture, false);
     pl__reserve_triangles(layer, 3, 3);
 
-    uint32_t vertexStart = pl_sb_size(layer->drawlist->sbVertexBuffer);
+    uint32_t vertexStart = plu_sb_size(layer->drawlist->sbVertexBuffer);
     pl__add_vertex(layer, p0, color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
     pl__add_vertex(layer, p1, color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
     pl__add_vertex(layer, p2, color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -410,11 +410,11 @@ pl_add_rect(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plVec4 tColor, flo
     const plVec2 fBotLeftVec  = {tMinP.x, tMaxP.y};
     const plVec2 fTopRightVec = {tMaxP.x, tMinP.y};
 
-    pl_sb_push(ptLayer->sbPath, tMinP);
-    pl_sb_push(ptLayer->sbPath, fBotLeftVec);
-    pl_sb_push(ptLayer->sbPath, tMaxP);
-    pl_sb_push(ptLayer->sbPath, fTopRightVec);
-    pl_sb_push(ptLayer->sbPath, tMinP);
+    plu_sb_push(ptLayer->sbPath, tMinP);
+    plu_sb_push(ptLayer->sbPath, fBotLeftVec);
+    plu_sb_push(ptLayer->sbPath, tMaxP);
+    plu_sb_push(ptLayer->sbPath, fTopRightVec);
+    plu_sb_push(ptLayer->sbPath, tMinP);
     pl__submit_path(ptLayer, tColor, fThickness);   
 }
 
@@ -427,7 +427,7 @@ pl_add_rect_filled(plDrawLayer* layer, plVec2 minP, plVec2 maxP, plVec4 color)
     const plVec2 bottomLeft = { minP.x, maxP.y };
     const plVec2 topRight =   { maxP.x, minP.y };
 
-    const uint32_t vertexStart = pl_sb_size(layer->drawlist->sbVertexBuffer);
+    const uint32_t vertexStart = plu_sb_size(layer->drawlist->sbVertexBuffer);
     pl__add_vertex(layer, minP,       color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
     pl__add_vertex(layer, bottomLeft, color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
     pl__add_vertex(layer, maxP,       color, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -442,7 +442,7 @@ void
 pl_add_rect_rounded(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plVec4 tColor, float fThickness, float fRadius, uint32_t uSegments)
 {
     if(uSegments == 0){ uSegments = 3; }
-    const float fIncrement = PL_PI_2 / uSegments;
+    const float fIncrement = PLU_PI_2 / uSegments;
     float fTheta = 0.0f;
 
 
@@ -462,43 +462,43 @@ pl_add_rect_rounded(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plVec4 tCo
     const plVec2 topRightInner    = { tMaxP.x - fRadius, tMinP.y + fRadius };
     const plVec2 topRightEnd      = { tMaxP.x, tMinP.y + fRadius };
     
-    pl_sb_push(ptLayer->sbPath, bottomRightStart);
+    plu_sb_push(ptLayer->sbPath, bottomRightStart);
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl_sb_push(ptLayer->sbPath, ((plVec2){bottomRightInner.x + fRadius * sinf(fTheta + PL_PI_2), bottomRightInner.y + fRadius * sinf(fTheta)}));
+        plu_sb_push(ptLayer->sbPath, ((plVec2){bottomRightInner.x + fRadius * sinf(fTheta + PLU_PI_2), bottomRightInner.y + fRadius * sinf(fTheta)}));
         fTheta += fIncrement;
     }
-    pl_sb_push(ptLayer->sbPath, bottomRightEnd);
+    plu_sb_push(ptLayer->sbPath, bottomRightEnd);
 
-    pl_sb_push(ptLayer->sbPath, bottomLeftStart);
+    plu_sb_push(ptLayer->sbPath, bottomLeftStart);
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl_sb_push(ptLayer->sbPath, ((plVec2){bottomLeftInner.x + fRadius * sinf(fTheta + PL_PI_2), bottomLeftInner.y + fRadius * sinf(fTheta)}));
+        plu_sb_push(ptLayer->sbPath, ((plVec2){bottomLeftInner.x + fRadius * sinf(fTheta + PLU_PI_2), bottomLeftInner.y + fRadius * sinf(fTheta)}));
         fTheta += fIncrement;
     }
-    pl_sb_push(ptLayer->sbPath, bottomLeftEnd);
+    plu_sb_push(ptLayer->sbPath, bottomLeftEnd);
 
-    pl_sb_push(ptLayer->sbPath, topLeftStart);
+    plu_sb_push(ptLayer->sbPath, topLeftStart);
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl_sb_push(ptLayer->sbPath, ((plVec2){topLeftInner.x + fRadius * sinf(fTheta + PL_PI_2), topLeftInner.y + fRadius * sinf(fTheta)}));
+        plu_sb_push(ptLayer->sbPath, ((plVec2){topLeftInner.x + fRadius * sinf(fTheta + PLU_PI_2), topLeftInner.y + fRadius * sinf(fTheta)}));
         fTheta += fIncrement;
     }
-    pl_sb_push(ptLayer->sbPath, topLeftEnd);
+    plu_sb_push(ptLayer->sbPath, topLeftEnd);
 
-    pl_sb_push(ptLayer->sbPath, topRightStart);
+    plu_sb_push(ptLayer->sbPath, topRightStart);
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl_sb_push(ptLayer->sbPath, ((plVec2){topRightInner.x + fRadius * sinf(fTheta + PL_PI_2), topRightInner.y + fRadius * sinf(fTheta)}));
+        plu_sb_push(ptLayer->sbPath, ((plVec2){topRightInner.x + fRadius * sinf(fTheta + PLU_PI_2), topRightInner.y + fRadius * sinf(fTheta)}));
         fTheta += fIncrement;
     }
-    pl_sb_push(ptLayer->sbPath, topRightEnd);
+    plu_sb_push(ptLayer->sbPath, topRightEnd);
 
-    pl_sb_push(ptLayer->sbPath, bottomRightStart);
+    plu_sb_push(ptLayer->sbPath, bottomRightStart);
 
     pl__submit_path(ptLayer, tColor, fThickness);
 }
@@ -511,9 +511,9 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
     pl__prepare_draw_command(ptLayer, gptCtx->fontAtlas->texture, false);
     pl__reserve_triangles(ptLayer, numTriangles, numTriangles + 1);
 
-    const uint32_t uVertexStart = pl_sb_size(ptLayer->drawlist->sbVertexBuffer);
+    const uint32_t uVertexStart = plu_sb_size(ptLayer->drawlist->sbVertexBuffer);
 
-    const float fIncrement = PL_PI_2 / uSegments;
+    const float fIncrement = PLU_PI_2 / uSegments;
     float fTheta = 0.0f;
 
     const plVec2 bottomRightStart = { tMaxP.x, tMaxP.y - fRadius };
@@ -539,7 +539,7 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl__add_vertex(ptLayer, ((plVec2){bottomRightInner.x + fRadius * sinf(fTheta + PL_PI_2), bottomRightInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
+        pl__add_vertex(ptLayer, ((plVec2){bottomRightInner.x + fRadius * sinf(fTheta + PLU_PI_2), bottomRightInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         fTheta += fIncrement;
     }
     pl__add_vertex(ptLayer, bottomRightEnd, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -548,7 +548,7 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl__add_vertex(ptLayer, ((plVec2){bottomLeftInner.x + fRadius * sinf(fTheta + PL_PI_2), bottomLeftInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
+        pl__add_vertex(ptLayer, ((plVec2){bottomLeftInner.x + fRadius * sinf(fTheta + PLU_PI_2), bottomLeftInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         fTheta += fIncrement;
     }
     pl__add_vertex(ptLayer, bottomLeftEnd, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -557,7 +557,7 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl__add_vertex(ptLayer, ((plVec2){topLeftInner.x + fRadius * sinf(fTheta + PL_PI_2), topLeftInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
+        pl__add_vertex(ptLayer, ((plVec2){topLeftInner.x + fRadius * sinf(fTheta + PLU_PI_2), topLeftInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         fTheta += fIncrement;
     }
     pl__add_vertex(ptLayer, topLeftEnd, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -566,7 +566,7 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
     fTheta += fIncrement;
     for(uint32_t i = 1; i < uSegments; i++)
     {
-        pl__add_vertex(ptLayer, ((plVec2){topRightInner.x + fRadius * sinf(fTheta + PL_PI_2), topRightInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
+        pl__add_vertex(ptLayer, ((plVec2){topRightInner.x + fRadius * sinf(fTheta + PLU_PI_2), topRightInner.y + fRadius * sinf(fTheta)}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         fTheta += fIncrement;
     }
     pl__add_vertex(ptLayer, topRightEnd, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
@@ -580,11 +580,11 @@ pl_add_rect_rounded_filled(plDrawLayer* ptLayer, plVec2 tMinP, plVec2 tMaxP, plV
 void
 pl_add_quad(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plVec2 tP3, plVec4 tColor, float fThickness)
 {
-    pl_sb_push(ptLayer->sbPath, tP0);
-    pl_sb_push(ptLayer->sbPath, tP1);
-    pl_sb_push(ptLayer->sbPath, tP2);
-    pl_sb_push(ptLayer->sbPath, tP3);
-    pl_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP1);
+    plu_sb_push(ptLayer->sbPath, tP2);
+    plu_sb_push(ptLayer->sbPath, tP3);
+    plu_sb_push(ptLayer->sbPath, tP0);
     pl__submit_path(ptLayer, tColor, fThickness);
 }
 
@@ -594,7 +594,7 @@ pl_add_quad_filled(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plV
     pl__prepare_draw_command(ptLayer, gptCtx->fontAtlas->texture, false);
     pl__reserve_triangles(ptLayer, 6, 4);
 
-    const uint32_t uVtxStart = pl_sb_size(ptLayer->drawlist->sbVertexBuffer);
+    const uint32_t uVtxStart = plu_sb_size(ptLayer->drawlist->sbVertexBuffer);
     pl__add_vertex(ptLayer, tP0, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]}); // top left
     pl__add_vertex(ptLayer, tP1, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]}); // bot left
     pl__add_vertex(ptLayer, tP2, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]}); // bot right
@@ -608,14 +608,14 @@ void
 pl_add_circle(plDrawLayer* ptLayer, plVec2 tP, float fRadius, plVec4 tColor, uint32_t uSegments, float fThickness)
 {
     if(uSegments == 0){ uSegments = 12; }
-    const float fIncrement = PL_2PI / uSegments;
+    const float fIncrement = PLU_2PI / uSegments;
     float fTheta = 0.0f;
     for(uint32_t i = 0; i < uSegments; i++)
     {
-        pl_sb_push(ptLayer->sbPath, ((plVec2){tP.x + fRadius * sinf(fTheta + PL_PI_2), tP.y + fRadius * sinf(fTheta)}));
+        plu_sb_push(ptLayer->sbPath, ((plVec2){tP.x + fRadius * sinf(fTheta + PLU_PI_2), tP.y + fRadius * sinf(fTheta)}));
         fTheta += fIncrement;
     }
-    pl_sb_push(ptLayer->sbPath, ((plVec2){tP.x + fRadius, tP.y}));
+    plu_sb_push(ptLayer->sbPath, ((plVec2){tP.x + fRadius, tP.y}));
     pl__submit_path(ptLayer, tColor, fThickness);   
 }
 
@@ -626,14 +626,14 @@ pl_add_circle_filled(plDrawLayer* ptLayer, plVec2 tP, float fRadius, plVec4 tCol
     pl__prepare_draw_command(ptLayer, gptCtx->fontAtlas->texture, false);
     pl__reserve_triangles(ptLayer, 3 * uSegments, uSegments + 1);
 
-    const uint32_t uVertexStart = pl_sb_size(ptLayer->drawlist->sbVertexBuffer);
+    const uint32_t uVertexStart = plu_sb_size(ptLayer->drawlist->sbVertexBuffer);
     pl__add_vertex(ptLayer, tP, tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
 
-    const float fIncrement = PL_2PI / uSegments;
+    const float fIncrement = PLU_2PI / uSegments;
     float fTheta = 0.0f;
     for(uint32_t i = 0; i < uSegments; i++)
     {
-        pl__add_vertex(ptLayer, ((plVec2){tP.x + (fRadius * sinf(fTheta + PL_PI_2)), tP.y + (fRadius * sinf(fTheta))}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
+        pl__add_vertex(ptLayer, ((plVec2){tP.x + (fRadius * sinf(fTheta + PLU_PI_2)), tP.y + (fRadius * sinf(fTheta))}), tColor, (plVec2){gptCtx->fontAtlas->whiteUv[0], gptCtx->fontAtlas->whiteUv[1]});
         fTheta += fIncrement;
     }
 
@@ -657,7 +657,7 @@ pl_add_image_ex(plDrawLayer* ptLayer, plTextureId tTexture, plVec2 tPMin, plVec2
     const plVec2 bottomLeft = { tPMin.x, tPMax.y };
     const plVec2 topRight =   { tPMax.x, tPMin.y };
 
-    const uint32_t vertexStart = pl_sb_size(ptLayer->drawlist->sbVertexBuffer);
+    const uint32_t vertexStart = plu_sb_size(ptLayer->drawlist->sbVertexBuffer);
     pl__add_vertex(ptLayer, tPMin,       tColor, tUvMin);
     pl__add_vertex(ptLayer, bottomLeft, tColor, (plVec2){tUvMin.x, tUvMax.y});
     pl__add_vertex(ptLayer, tPMax,       tColor, tUvMax);
@@ -676,7 +676,7 @@ pl_add_bezier_quad(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plV
         uSegments = 12;
 
     // push first point
-    pl_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP0);
 
     // calculate and push points between first and last
     for (int i = 1; i < (int)uSegments; i++)
@@ -686,17 +686,17 @@ pl_add_bezier_quad(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plV
         const float tt = t * t;
         const float uu = u * u;
         
-        const plVec2 p0 = pl_mul_vec2_scalarf(tP0, uu);
-        const plVec2 p1 = pl_mul_vec2_scalarf(tP1, (2.0f * u * t)); 
-        const plVec2 p2 = pl_mul_vec2_scalarf(tP2, tt); 
-        const plVec2 p3 = pl_add_vec2(p0,p1);
-        const plVec2 p4 = pl_add_vec2(p2,p3);
+        const plVec2 p0 = plu_mul_vec2_scalarf(tP0, uu);
+        const plVec2 p1 = plu_mul_vec2_scalarf(tP1, (2.0f * u * t)); 
+        const plVec2 p2 = plu_mul_vec2_scalarf(tP2, tt); 
+        const plVec2 p3 = plu_add_vec2(p0,p1);
+        const plVec2 p4 = plu_add_vec2(p2,p3);
 
-        pl_sb_push(ptLayer->sbPath, p4);
+        plu_sb_push(ptLayer->sbPath, p4);
     }
 
     // push last point
-    pl_sb_push(ptLayer->sbPath, tP2);
+    plu_sb_push(ptLayer->sbPath, tP2);
 
     pl__submit_path(ptLayer, tColor, fThickness); 
 }
@@ -710,7 +710,7 @@ pl_add_bezier_cubic(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, pl
         uSegments = 12;
 
     // push first point
-    pl_sb_push(ptLayer->sbPath, tP0);
+    plu_sb_push(ptLayer->sbPath, tP0);
 
     // calculate and push points between first and last
     for (int i = 1; i < (int)uSegments; i++)
@@ -722,19 +722,19 @@ pl_add_bezier_cubic(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, pl
         const float uuu = uu * u;
         const float ttt = tt * t;
         
-        const plVec2 p0 = pl_mul_vec2_scalarf(tP0, uuu);
-        const plVec2 p1 = pl_mul_vec2_scalarf(tP1, (3.0f * uu * t)); 
-        const plVec2 p2 = pl_mul_vec2_scalarf(tP2, (3.0f * u * tt)); 
-        const plVec2 p3 = pl_mul_vec2_scalarf(tP3, (ttt));
-        const plVec2 p5 = pl_add_vec2(p0,p1);
-        const plVec2 p6 = pl_add_vec2(p2,p3);
-        const plVec2 p7 = pl_add_vec2(p5,p6);
+        const plVec2 p0 = plu_mul_vec2_scalarf(tP0, uuu);
+        const plVec2 p1 = plu_mul_vec2_scalarf(tP1, (3.0f * uu * t)); 
+        const plVec2 p2 = plu_mul_vec2_scalarf(tP2, (3.0f * u * tt)); 
+        const plVec2 p3 = plu_mul_vec2_scalarf(tP3, (ttt));
+        const plVec2 p5 = plu_add_vec2(p0,p1);
+        const plVec2 p6 = plu_add_vec2(p2,p3);
+        const plVec2 p7 = plu_add_vec2(p5,p6);
 
-        pl_sb_push(ptLayer->sbPath, p7);
+        plu_sb_push(ptLayer->sbPath, p7);
     }
 
     // push last point
-    pl_sb_push(ptLayer->sbPath, tP3);
+    plu_sb_push(ptLayer->sbPath, tP3);
 
     pl__submit_path(ptLayer, tColor, fThickness); 
 }
@@ -781,29 +781,29 @@ pl_add_font_from_memory_ttf(plFontAtlas* atlas, plFontConfig config, void* data)
     font.lineSpacing = (font.ascent - font.descent + prep.scale * (float)lineGap);
 
     // convert individual chars to ranges
-    for(uint32_t i = 0; i < pl_sb_size(font.config.sbIndividualChars); i++)
+    for(uint32_t i = 0; i < plu_sb_size(font.config.sbIndividualChars); i++)
     {
         plFontRange range = {
             .charCount = 1,
             .firstCodePoint = font.config.sbIndividualChars[i],
             .ptrFontChar = NULL
         };
-        pl_sb_push(font.config.sbRanges, range);
+        plu_sb_push(font.config.sbRanges, range);
     }
 
     // find total number of glyphs/chars required
     uint32_t totalCharCount = 0u;
-    for(uint32_t i = 0; i < pl_sb_size(font.config.sbRanges); i++)
+    for(uint32_t i = 0; i < plu_sb_size(font.config.sbRanges); i++)
         totalCharCount += font.config.sbRanges[i].charCount;
     
-    pl_sb_reserve(font.sbGlyphs, totalCharCount);
-    pl_sb_resize(font.sbCharData, totalCharCount);
+    plu_sb_reserve(font.sbGlyphs, totalCharCount);
+    plu_sb_resize(font.sbCharData, totalCharCount);
 
     if(font.config.sdf)
-        pl_sb_reserve(atlas->sbCustomRects, pl_sb_size(atlas->sbCustomRects) + totalCharCount); // is this correct
+        plu_sb_reserve(atlas->sbCustomRects, plu_sb_size(atlas->sbCustomRects) + totalCharCount); // is this correct
 
-    prep.ranges = malloc(sizeof(stbtt_pack_range) * pl_sb_size(font.config.sbRanges));
-    memset(prep.ranges, 0, sizeof(stbtt_pack_range) * pl_sb_size(font.config.sbRanges));
+    prep.ranges = malloc(sizeof(stbtt_pack_range) * plu_sb_size(font.config.sbRanges));
+    memset(prep.ranges, 0, sizeof(stbtt_pack_range) * plu_sb_size(font.config.sbRanges));
 
     // find max codepoint & set range pointers into font char data
     int k = 0;
@@ -811,7 +811,7 @@ pl_add_font_from_memory_ttf(plFontAtlas* atlas, plFontConfig config, void* data)
     totalCharCount = 0u;
     bool missingGlyphAdded = false;
 
-    for(uint32_t i = 0; i < pl_sb_size(font.config.sbRanges); i++)
+    for(uint32_t i = 0; i < plu_sb_size(font.config.sbRanges); i++)
     {
         plFontRange* range = &font.config.sbRanges[i];
         prep.uTotalCharCount += range->charCount;
@@ -822,7 +822,7 @@ pl_add_font_from_memory_ttf(plFontAtlas* atlas, plFontConfig config, void* data)
         prep.rects = malloc(sizeof(stbrp_rect) * prep.uTotalCharCount);
     }
 
-    for(uint32_t i = 0; i < pl_sb_size(font.config.sbRanges); i++)
+    for(uint32_t i = 0; i < plu_sb_size(font.config.sbRanges); i++)
     {
         plFontRange* range = &font.config.sbRanges[i];
 
@@ -871,7 +871,7 @@ pl_add_font_from_memory_ttf(plFontAtlas* atlas, plFontConfig config, void* data)
                     .height = (uint32_t)height,
                     .bytes = bytes
                 };
-                pl_sb_push(atlas->sbCustomRects, customRect);
+                plu_sb_push(atlas->sbCustomRects, customRect);
                 prep.area += width * height;
                 
             }
@@ -909,12 +909,12 @@ pl_add_font_from_memory_ttf(plFontAtlas* atlas, plFontConfig config, void* data)
         }
         totalCharCount += range->charCount;
     }
-    pl_sb_resize(font.sbCodePoints, (uint32_t)maxCodePoint);
+    plu_sb_resize(font.sbCodePoints, (uint32_t)maxCodePoint);
 
     // add font to atlas
     font.parentAtlas = atlas;
-    pl_sb_push(atlas->sbFonts, font);
-    pl_sb_push(atlas->_sbPrepData, prep);
+    plu_sb_push(atlas->sbFonts, font);
+    plu_sb_push(atlas->_sbPrepData, prep);
 }
 
 plVec2
@@ -943,7 +943,7 @@ pl_calculate_text_size_ex(plFont* font, float size, const char* text, const char
             text += 1;
         else
         {
-            text += pl_text_char_from_utf8(&c, text, NULL);
+            text += plu_text_char_from_utf8(&c, text, NULL);
             if(c == 0) // malformed UTF-8?
                 break;
         }
@@ -961,7 +961,7 @@ pl_calculate_text_size_ex(plFont* font, float size, const char* text, const char
         {
 
             bool glyphFound = false;
-            for(uint32_t i = 0u; i < pl_sb_size(font->config.sbRanges); i++)
+            for(uint32_t i = 0u; i < plu_sb_size(font->config.sbRanges); i++)
             {
                 if (c >= (uint32_t)font->config.sbRanges[i].firstCodePoint && c < (uint32_t)font->config.sbRanges[i].firstCodePoint + (uint32_t)font->config.sbRanges[i].charCount) 
                 {
@@ -1018,7 +1018,7 @@ pl_calculate_text_size_ex(plFont* font, float size, const char* text, const char
         }   
     }
 
-    return pl_sub_vec2(result, originalPosition);
+    return plu_sub_vec2(result, originalPosition);
 }
 
 plRect
@@ -1047,7 +1047,7 @@ pl_calculate_text_bb_ex(plFont* font, float size, plVec2 tP, const char* text, c
             text += 1;
         else
         {
-            text += pl_text_char_from_utf8(&c, text, NULL);
+            text += plu_text_char_from_utf8(&c, text, NULL);
             if(c == 0) // malformed UTF-8?
                 break;
         }
@@ -1065,7 +1065,7 @@ pl_calculate_text_bb_ex(plFont* font, float size, plVec2 tP, const char* text, c
         {
 
             bool glyphFound = false;
-            for(uint32_t i = 0u; i < pl_sb_size(font->config.sbRanges); i++)
+            for(uint32_t i = 0u; i < plu_sb_size(font->config.sbRanges); i++)
             {
                 if (c >= (uint32_t)font->config.sbRanges[i].firstCodePoint && c < (uint32_t)font->config.sbRanges[i].firstCodePoint + (uint32_t)font->config.sbRanges[i].charCount) 
                 {
@@ -1123,11 +1123,11 @@ pl_calculate_text_bb_ex(plFont* font, float size, plVec2 tP, const char* text, c
         }   
     }
 
-    tTextSize = pl_sub_vec2(tTextSize, originalPosition);
+    tTextSize = plu_sub_vec2(tTextSize, originalPosition);
 
-    const plVec2 tStartOffset = pl_add_vec2(tP, originalPosition);
+    const plVec2 tStartOffset = plu_add_vec2(tP, originalPosition);
 
-    const plRect tResult = pl_calculate_rect(tStartOffset, tTextSize);
+    const plRect tResult = plu_calculate_rect(tStartOffset, tTextSize);
 
     return tResult;
 }
@@ -1135,28 +1135,28 @@ pl_calculate_text_bb_ex(plFont* font, float size, plVec2 tP, const char* text, c
 void
 pl_push_clip_rect_pt(plDrawList* ptDrawlist, const plRect* ptRect)
 {
-    pl_sb_push(ptDrawlist->sbClipStack, *ptRect);
+    plu_sb_push(ptDrawlist->sbClipStack, *ptRect);
 }
 
 void
 pl_push_clip_rect(plDrawList* ptDrawlist, plRect tRect, bool bAccumulate)
 {
-    if(bAccumulate && pl_sb_size(ptDrawlist->sbClipStack) > 0)
-        tRect = pl_rect_clip_full(&tRect, &pl_sb_back(ptDrawlist->sbClipStack));
-    pl_sb_push(ptDrawlist->sbClipStack, tRect);
+    if(bAccumulate && plu_sb_size(ptDrawlist->sbClipStack) > 0)
+        tRect = plu_rect_clip_full(&tRect, &plu_sb_back(ptDrawlist->sbClipStack));
+    plu_sb_push(ptDrawlist->sbClipStack, tRect);
 }
 
 void
 pl_pop_clip_rect(plDrawList* ptDrawlist)
 {
-    pl_sb_pop(ptDrawlist->sbClipStack);
+    plu_sb_pop(ptDrawlist->sbClipStack);
 }
 
 const plRect*
 pl_get_clip_rect(plDrawList* ptDrawlist)
 {
-     if(pl_sb_size(ptDrawlist->sbClipStack) > 0)
-        return &pl_sb_back(ptDrawlist->sbClipStack);
+     if(plu_sb_size(ptDrawlist->sbClipStack) > 0)
+        return &plu_sb_back(ptDrawlist->sbClipStack);
     return NULL;
 }
 
@@ -1165,7 +1165,7 @@ pl_build_font_atlas(plFontAtlas* atlas)
 {
     // calculate texture total area needed
     uint32_t totalAtlasArea = 0u;
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->_sbPrepData); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->_sbPrepData); i++)
         totalAtlasArea += atlas->_sbPrepData[i].area;
 
     // create our white location
@@ -1177,8 +1177,8 @@ pl_build_font_atlas(plFontAtlas* atlas)
         .bytes = malloc(64)
     };
     memset(whiteRect.bytes, 255, 64);
-    pl_sb_push(atlas->sbCustomRects, whiteRect);
-    atlas->whiteRect = &pl_sb_back(atlas->sbCustomRects);
+    plu_sb_push(atlas->sbCustomRects, whiteRect);
+    atlas->whiteRect = &plu_sb_back(atlas->sbCustomRects);
     totalAtlasArea += 64;
 
     // calculate final texture area required
@@ -1194,18 +1194,18 @@ pl_build_font_atlas(plFontAtlas* atlas)
     stbtt_PackBegin(&spc, NULL, atlas->atlasSize[0], 1024 * 32, 0, atlas->glyphPadding, NULL);
 
     // allocate SDF rects
-    stbrp_rect* rects = malloc(pl_sb_size(atlas->sbCustomRects) * sizeof(stbrp_rect));
-    memset(rects, 0, sizeof(stbrp_rect) * pl_sb_size(atlas->sbCustomRects));
+    stbrp_rect* rects = malloc(plu_sb_size(atlas->sbCustomRects) * sizeof(stbrp_rect));
+    memset(rects, 0, sizeof(stbrp_rect) * plu_sb_size(atlas->sbCustomRects));
 
     // transfer our data to stb data
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->sbCustomRects); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->sbCustomRects); i++)
     {
         rects[i].w = (int)atlas->sbCustomRects[i].width;
         rects[i].h = (int)atlas->sbCustomRects[i].height;
     }
     
     // pack bitmap fonts
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->_sbPrepData); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->_sbPrepData); i++)
     {
         plFont* font = &atlas->sbFonts[i];
         if(!font->config.sdf)
@@ -1223,9 +1223,9 @@ pl_build_font_atlas(plFontAtlas* atlas)
 
     // pack SDF fonts
     stbtt_PackSetOversampling(&spc, 1, 1);
-    stbrp_pack_rects((stbrp_context*)spc.pack_info, rects, pl_sb_size(atlas->sbCustomRects));
+    stbrp_pack_rects((stbrp_context*)spc.pack_info, rects, plu_sb_size(atlas->sbCustomRects));
 
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->sbCustomRects); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->sbCustomRects); i++)
     {
         if(rects[i].was_packed)
             atlas->atlasSize[1] = (uint32_t)pl__get_max((float)atlas->atlasSize[1], (float)(rects[i].y + rects[i].h));
@@ -1247,28 +1247,28 @@ pl_build_font_atlas(plFontAtlas* atlas)
     atlas->pixelDataSize = atlas->atlasSize[0] * atlas->atlasSize[1];
 
     // rasterize bitmap fonts
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->_sbPrepData); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->_sbPrepData); i++)
     {
         plFont* font = &atlas->sbFonts[i];
         plFontPrepData* prep = &atlas->_sbPrepData[i];
         if(!atlas->sbFonts[i].config.sdf)
-            stbtt_PackFontRangesRenderIntoRects(&spc, &prep->fontInfo, prep->ranges, pl_sb_size(font->config.sbRanges), prep->rects);
+            stbtt_PackFontRangesRenderIntoRects(&spc, &prep->fontInfo, prep->ranges, plu_sb_size(font->config.sbRanges), prep->rects);
     }
 
     // update SDF/custom data
-    for(uint32_t i = 0u; i < pl_sb_size(atlas->sbCustomRects); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(atlas->sbCustomRects); i++)
     {
         atlas->sbCustomRects[i].x = (uint32_t)rects[i].x;
         atlas->sbCustomRects[i].y = (uint32_t)rects[i].y;
     }
 
     uint32_t charDataOffset = 0u;
-    for(uint32_t fontIndex = 0u; fontIndex < pl_sb_size(atlas->sbFonts); fontIndex++)
+    for(uint32_t fontIndex = 0u; fontIndex < plu_sb_size(atlas->sbFonts); fontIndex++)
     {
         plFont* font = &atlas->sbFonts[fontIndex];
         if(font->config.sdf)
         {
-            for(uint32_t i = 0u; i < pl_sb_size(font->sbCharData); i++)
+            for(uint32_t i = 0u; i < plu_sb_size(font->sbCharData); i++)
             {
                 font->sbCharData[i].x0 = (uint16_t)rects[charDataOffset + i].x;
                 font->sbCharData[i].y0 = (uint16_t)rects[charDataOffset + i].y;
@@ -1276,7 +1276,7 @@ pl_build_font_atlas(plFontAtlas* atlas)
                 font->sbCharData[i].y1 = (uint16_t)(rects[charDataOffset + i].y + atlas->sbCustomRects[charDataOffset + i].height);
                 
             }
-            charDataOffset += pl_sb_size(font->sbCharData);  
+            charDataOffset += plu_sb_size(font->sbCharData);  
         }
     }
 
@@ -1284,7 +1284,7 @@ pl_build_font_atlas(plFontAtlas* atlas)
     stbtt_PackEnd(&spc);
 
     // rasterize SDF/custom rects
-    for(uint32_t r = 0u; r < pl_sb_size(atlas->sbCustomRects); r++)
+    for(uint32_t r = 0u; r < plu_sb_size(atlas->sbCustomRects); r++)
     {
         plFontCustomRect* customRect = &atlas->sbCustomRects[r];
         for(uint32_t i = 0u; i < customRect->height; i++)
@@ -1301,7 +1301,7 @@ pl_build_font_atlas(plFontAtlas* atlas)
     atlas->whiteUv[1] = (float)(atlas->whiteRect->y + atlas->whiteRect->height / 2) / (float)atlas->atlasSize[1];
 
     // add glyphs
-    for(uint32_t fontIndex = 0u; fontIndex < pl_sb_size(atlas->sbFonts); fontIndex++)
+    for(uint32_t fontIndex = 0u; fontIndex < plu_sb_size(atlas->sbFonts); fontIndex++)
     {
         plFont* font = &atlas->sbFonts[fontIndex];
 
@@ -1309,7 +1309,7 @@ pl_build_font_atlas(plFontAtlas* atlas)
         float pixelHeight = 0.0f;
         if(font->config.sdf) pixelHeight = 0.5f * 1.0f / (float)atlas->atlasSize[1]; // is this correct?
         
-        for(uint32_t i = 0u; i < pl_sb_size(font->config.sbRanges); i++)
+        for(uint32_t i = 0u; i < plu_sb_size(font->config.sbRanges); i++)
         {
             plFontRange* range = &font->config.sbRanges[i];
             for(uint32_t j = 0u; j < range->charCount; j++)
@@ -1334,8 +1334,8 @@ pl_build_font_atlas(plFontAtlas* atlas)
                     .xAdvance = font->sbCharData[charIndex].xAdv,
                     .leftBearing = (float)leftSideBearing * atlas->_sbPrepData[fontIndex].scale
                 };
-                pl_sb_push(font->sbGlyphs, glyph);
-                font->sbCodePoints[codePoint] = pl_sb_size(font->sbGlyphs) - 1;
+                plu_sb_push(font->sbGlyphs, glyph);
+                font->sbCodePoints[codePoint] = plu_sb_size(font->sbGlyphs) - 1;
                 charIndex++;
             }
         }
@@ -1358,27 +1358,27 @@ pl_build_font_atlas(plFontAtlas* atlas)
 void
 pl_cleanup_font_atlas(plFontAtlas* atlas)
 {
-    for(uint32_t i = 0; i < pl_sb_size(atlas->sbFonts); i++)
+    for(uint32_t i = 0; i < plu_sb_size(atlas->sbFonts); i++)
     {
         plFont* font = &atlas->sbFonts[i];
-        pl_sb_free(font->config.sbRanges);
-        pl_sb_free(font->config.sbIndividualChars);
-        pl_sb_free(font->sbCodePoints);
-        pl_sb_free(font->sbGlyphs);
-        pl_sb_free(font->sbCharData);
+        plu_sb_free(font->config.sbRanges);
+        plu_sb_free(font->config.sbIndividualChars);
+        plu_sb_free(font->sbCodePoints);
+        plu_sb_free(font->sbGlyphs);
+        plu_sb_free(font->sbCharData);
     }
-    for(uint32_t i = 0; i < pl_sb_size(atlas->_sbPrepData); i++)
+    for(uint32_t i = 0; i < plu_sb_size(atlas->_sbPrepData); i++)
     {
         free(atlas->_sbPrepData[i].ranges);
         free(atlas->_sbPrepData[i].rects);
     }
-    for(uint32_t i = 0; i < pl_sb_size(atlas->sbCustomRects); i++)
+    for(uint32_t i = 0; i < plu_sb_size(atlas->sbCustomRects); i++)
     {
         free(atlas->sbCustomRects[i].bytes);
     }
-    pl_sb_free(atlas->sbCustomRects);
-    pl_sb_free(atlas->sbFonts);
-    pl_sb_free(atlas->_sbPrepData);
+    plu_sb_free(atlas->sbCustomRects);
+    plu_sb_free(atlas->sbFonts);
+    plu_sb_free(atlas->_sbPrepData);
     free(atlas->pixelsAsAlpha8);
     free(atlas->pixelsAsRGBA32);
 }
@@ -1388,7 +1388,7 @@ pl__prepare_draw_command(plDrawLayer* layer, plTextureId textureID, bool sdf)
 {
     bool createNewCommand = true;
 
-    const plRect tCurrentClip = pl_sb_size(layer->drawlist->sbClipStack) > 0 ? pl_sb_top(layer->drawlist->sbClipStack) : (plRect){0};
+    const plRect tCurrentClip = plu_sb_size(layer->drawlist->sbClipStack) > 0 ? plu_sb_top(layer->drawlist->sbClipStack) : (plRect){0};
 
     
     if(layer->_lastCommand)
@@ -1412,25 +1412,25 @@ pl__prepare_draw_command(plDrawLayer* layer, plTextureId textureID, bool sdf)
     {
         plDrawCommand newdrawCommand = 
         {
-            .vertexOffset = pl_sb_size(layer->drawlist->sbVertexBuffer),
-            .indexOffset  = pl_sb_size(layer->sbIndexBuffer),
+            .vertexOffset = plu_sb_size(layer->drawlist->sbVertexBuffer),
+            .indexOffset  = plu_sb_size(layer->sbIndexBuffer),
             .elementCount = 0u,
             .textureId    = textureID,
             .sdf          = sdf,
             .tClip        = tCurrentClip
         };
-        pl_sb_push(layer->sbCommandBuffer, newdrawCommand);
+        plu_sb_push(layer->sbCommandBuffer, newdrawCommand);
         
     }
-    layer->_lastCommand = &pl_sb_top(layer->sbCommandBuffer);
+    layer->_lastCommand = &plu_sb_top(layer->sbCommandBuffer);
     layer->_lastCommand->textureId = textureID;
 }
 
 static void
 pl__reserve_triangles(plDrawLayer* layer, uint32_t indexCount, uint32_t vertexCount)
 {
-    pl_sb_reserve(layer->drawlist->sbVertexBuffer, pl_sb_size(layer->drawlist->sbVertexBuffer) + vertexCount);
-    pl_sb_reserve(layer->sbIndexBuffer, pl_sb_size(layer->sbIndexBuffer) + indexCount);
+    plu_sb_reserve(layer->drawlist->sbVertexBuffer, plu_sb_size(layer->drawlist->sbVertexBuffer) + vertexCount);
+    plu_sb_reserve(layer->sbIndexBuffer, plu_sb_size(layer->sbIndexBuffer) + indexCount);
     layer->_lastCommand->elementCount += indexCount; 
     layer->vertexCount += vertexCount;
 }
@@ -1445,7 +1445,7 @@ pl__add_vertex(plDrawLayer* layer, plVec2 pos, plVec4 color, plVec2 uv)
     tcolor |= (uint32_t) (255.0f * color.b + 0.5f) << 16;
     tcolor |= (uint32_t) (255.0f * color.a + 0.5f) << 24;
 
-    pl_sb_push(layer->drawlist->sbVertexBuffer,
+    plu_sb_push(layer->drawlist->sbVertexBuffer,
         ((plDrawVertex){
             .pos[0] = pos.x,
             .pos[1] = pos.y,
@@ -1459,9 +1459,9 @@ pl__add_vertex(plDrawLayer* layer, plVec2 pos, plVec4 color, plVec2 uv)
 static void
 pl__add_index(plDrawLayer* layer, uint32_t vertexStart, uint32_t i0, uint32_t i1, uint32_t i2)
 {
-    pl_sb_push(layer->sbIndexBuffer, vertexStart + i0);
-    pl_sb_push(layer->sbIndexBuffer, vertexStart + i1);
-    pl_sb_push(layer->sbIndexBuffer, vertexStart + i2);
+    plu_sb_push(layer->sbIndexBuffer, vertexStart + i0);
+    plu_sb_push(layer->sbIndexBuffer, vertexStart + i1);
+    plu_sb_push(layer->sbIndexBuffer, vertexStart + i2);
 }
 
 static char*
@@ -1772,7 +1772,7 @@ pl_add_default_font(plFontAtlas* ptrAtlas)
         .firstCodePoint = 0x0020,
         .charCount = 0x00FF - 0x0020
     };
-    pl_sb_push(fontConfig.sbRanges, range);
+    plu_sb_push(fontConfig.sbRanges, range);
     pl_add_font_from_memory_ttf(ptrAtlas, fontConfig, data);
 }
 

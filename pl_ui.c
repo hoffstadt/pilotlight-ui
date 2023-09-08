@@ -119,7 +119,7 @@ pl_add_text_event_utf16(uint16_t uChar)
         return;
     }
 
-    plWChar cp = uChar;
+    plUiWChar cp = uChar;
     if (gptCtx->tIO._tInputQueueSurrogate != 0)
     {
         if ((uChar & 0xFC00) != 0xDC00) // Invalid low surrogate
@@ -142,7 +142,7 @@ pl_add_text_events_utf8(const char* pcText)
     while(*pcText != 0)
     {
         uint32_t uChar = 0;
-        pcText += pl_text_char_from_utf8(&uChar, pcText, NULL);
+        pcText += plu_text_char_from_utf8(&uChar, pcText, NULL);
         pl_add_text_event(uChar);
     }
 }
@@ -192,7 +192,7 @@ pl_add_mouse_wheel_event(float fX, float fY)
 void
 pl_clear_input_characters(void)
 {
-    pl_sb_reset(gptCtx->tIO._sbInputQueueCharacters);
+    plu_sb_reset(gptCtx->tIO._sbInputQueueCharacters);
 }
 
 bool
@@ -308,11 +308,11 @@ pl_get_mouse_drag_delta(plMouseButton tButton, float fThreshold)
         if(gptCtx->tIO._afMouseDragMaxDistSqr[tButton] >= fThreshold * fThreshold)
         {
             if(pl_is_mouse_pos_valid(gptCtx->tIO._tMousePos) && pl_is_mouse_pos_valid(gptCtx->tIO._atMouseClickedPos[tButton]))
-                return PL_IO_VEC2_SUBTRACT(gptCtx->tIO._tLastValidMousePos, gptCtx->tIO._atMouseClickedPos[tButton]);
+                return plu_sub_vec2(gptCtx->tIO._tLastValidMousePos, gptCtx->tIO._atMouseClickedPos[tButton]);
         }
     }
     
-    return PL_IO_VEC2(0.0f, 0.0f);
+    return plu_create_vec2(0.0f, 0.0f);
 }
 
 plVec2
@@ -343,10 +343,10 @@ pl_set_mouse_cursor(plCursor tCursor)
 plUiContext*
 pl_create_ui_context(void)
 {
-    gptCtx = PL_ALLOC(sizeof(plUiContext));
+    gptCtx = PL_UI_ALLOC(sizeof(plUiContext));
     memset(gptCtx, 0, sizeof(plUiContext));
-    gptCtx->ptDrawlist = PL_ALLOC(sizeof(plDrawList));
-    gptCtx->ptDebugDrawlist = PL_ALLOC(sizeof(plDrawList));
+    gptCtx->ptDrawlist = PL_UI_ALLOC(sizeof(plDrawList));
+    gptCtx->ptDebugDrawlist = PL_UI_ALLOC(sizeof(plDrawList));
     memset(gptCtx->ptDrawlist, 0, sizeof(plDrawList));
     memset(gptCtx->ptDebugDrawlist, 0, sizeof(plDrawList));
     pl_register_drawlist(gptCtx->ptDrawlist);
@@ -380,51 +380,51 @@ pl_create_ui_context(void)
 void
 pl_destroy_ui_context(void)
 {
-    for(uint32_t i = 0; i < pl_sb_size(gptCtx->sbptWindows); i++)
+    for(uint32_t i = 0; i < plu_sb_size(gptCtx->sbptWindows); i++)
     {
-        pl_sb_free(gptCtx->sbptWindows[i]->tStorage.sbtData);
-        pl_sb_free(gptCtx->sbptWindows[i]->sbuTempLayoutIndexSort);
-        pl_sb_free(gptCtx->sbptWindows[i]->sbtTempLayoutSort);
-        pl_sb_free(gptCtx->sbptWindows[i]->sbtRowStack);
-        pl_sb_free(gptCtx->sbptWindows[i]->sbtChildWindows);
-        pl_sb_free(gptCtx->sbptWindows[i]->sbtRowTemplateEntries);
-        PL_FREE(gptCtx->sbptWindows[i]);
+        plu_sb_free(gptCtx->sbptWindows[i]->tStorage.sbtData);
+        plu_sb_free(gptCtx->sbptWindows[i]->sbuTempLayoutIndexSort);
+        plu_sb_free(gptCtx->sbptWindows[i]->sbtTempLayoutSort);
+        plu_sb_free(gptCtx->sbptWindows[i]->sbtRowStack);
+        plu_sb_free(gptCtx->sbptWindows[i]->sbtChildWindows);
+        plu_sb_free(gptCtx->sbptWindows[i]->sbtRowTemplateEntries);
+        PL_UI_FREE(gptCtx->sbptWindows[i]);
     }
 
 
 
-    for(uint32_t i = 0u; i < pl_sb_size(gptCtx->sbDrawlists); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(gptCtx->sbDrawlists); i++)
     {
         plDrawList* drawlist = gptCtx->sbDrawlists[i];
-        for(uint32_t j = 0; j < pl_sb_size(drawlist->sbSubmittedLayers); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbSubmittedLayers); j++)
         {
-            pl_sb_free(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
-            pl_sb_free(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
-            pl_sb_free(drawlist->sbSubmittedLayers[j]->sbPath);  
+            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
+            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
+            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbPath);  
         }
 
-        for(uint32_t j = 0; j < pl_sb_size(drawlist->sbLayersCreated); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbLayersCreated); j++)
         {
             free(drawlist->sbLayersCreated[j]);
         }
-        pl_sb_free(drawlist->sbDrawCommands);
-        pl_sb_free(drawlist->sbVertexBuffer);
-        pl_sb_free(drawlist->sbLayerCache);
-        pl_sb_free(drawlist->sbLayersCreated);
-        pl_sb_free(drawlist->sbSubmittedLayers);   
-        pl_sb_free(drawlist->sbClipStack);
+        plu_sb_free(drawlist->sbDrawCommands);
+        plu_sb_free(drawlist->sbVertexBuffer);
+        plu_sb_free(drawlist->sbLayerCache);
+        plu_sb_free(drawlist->sbLayersCreated);
+        plu_sb_free(drawlist->sbSubmittedLayers);   
+        plu_sb_free(drawlist->sbClipStack);
     }
-    pl_sb_free(gptCtx->sbDrawlists);
+    plu_sb_free(gptCtx->sbDrawlists);
 
-    PL_FREE(gptCtx->ptDrawlist);
-    PL_FREE(gptCtx->ptDebugDrawlist);
-    pl_sb_free(gptCtx->tWindows.sbtData);
-    pl_sb_free(gptCtx->sbptWindows);
-    pl_sb_free(gptCtx->sbtTabBars);
-    pl_sb_free(gptCtx->sbptFocusedWindows);
-    pl_sb_free(gptCtx->sbuIdStack);
+    PL_UI_FREE(gptCtx->ptDrawlist);
+    PL_UI_FREE(gptCtx->ptDebugDrawlist);
+    plu_sb_free(gptCtx->tWindows.sbtData);
+    plu_sb_free(gptCtx->sbptWindows);
+    plu_sb_free(gptCtx->sbtTabBars);
+    plu_sb_free(gptCtx->sbptFocusedWindows);
+    plu_sb_free(gptCtx->sbuIdStack);
 
-    PL_FREE(gptCtx);
+    PL_UI_FREE(gptCtx);
     gptCtx = NULL;
 }
 
@@ -487,7 +487,7 @@ pl_new_frame(void)
     gptCtx->tIO._fFrameRateSecPerFrameAccum += gptCtx->tIO.fDeltaTime - gptCtx->tIO._afFrameRateSecPerFrame[gptCtx->tIO._iFrameRateSecPerFrameIdx];
     gptCtx->tIO._afFrameRateSecPerFrame[gptCtx->tIO._iFrameRateSecPerFrameIdx] = gptCtx->tIO.fDeltaTime;
     gptCtx->tIO._iFrameRateSecPerFrameIdx = (gptCtx->tIO._iFrameRateSecPerFrameIdx + 1) % 120;
-    gptCtx->tIO._iFrameRateSecPerFrameCount = PL_IO_MAX(gptCtx->tIO._iFrameRateSecPerFrameCount, 120);
+    gptCtx->tIO._iFrameRateSecPerFrameCount = plu_max(gptCtx->tIO._iFrameRateSecPerFrameCount, 120);
     gptCtx->tIO.fFrameRate = FLT_MAX;
     if(gptCtx->tIO._fFrameRateSecPerFrameAccum > 0) gptCtx->tIO.fFrameRate = ((float) gptCtx->tIO._iFrameRateSecPerFrameCount) / gptCtx->tIO._fFrameRateSecPerFrameAccum;
 
@@ -496,24 +496,24 @@ pl_new_frame(void)
     pl__update_mouse_inputs();
 
     // reset drawlists
-    for(uint32_t i = 0u; i < pl_sb_size(gptCtx->sbDrawlists); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(gptCtx->sbDrawlists); i++)
     {
         plDrawList* drawlist = gptCtx->sbDrawlists[i];
 
         drawlist->indexBufferByteSize = 0u;
-        pl_sb_reset(drawlist->sbDrawCommands);
-        pl_sb_reset(drawlist->sbVertexBuffer);
+        plu_sb_reset(drawlist->sbDrawCommands);
+        plu_sb_reset(drawlist->sbVertexBuffer);
 
         // reset submitted layers
-        for(uint32_t j = 0; j < pl_sb_size(drawlist->sbSubmittedLayers); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbSubmittedLayers); j++)
         {
-            pl_sb_reset(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
-            pl_sb_reset(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
-            pl_sb_reset(drawlist->sbSubmittedLayers[j]->sbPath);  
+            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
+            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
+            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbPath);  
             drawlist->sbSubmittedLayers[j]->vertexCount = 0u;
             drawlist->sbSubmittedLayers[j]->_lastCommand = NULL;
         }
-        pl_sb_reset(drawlist->sbSubmittedLayers);       
+        plu_sb_reset(drawlist->sbSubmittedLayers);       
     }
 
     gptCtx->frameCount++;
@@ -562,8 +562,8 @@ pl_end_frame(void)
         gptCtx->uActiveWindowId = 0;
 
     // submit windows in display order
-    pl_sb_reset(gptCtx->sbptWindows);
-    for(uint32_t i = 0; i < pl_sb_size(gptCtx->sbptFocusedWindows); i++)
+    plu_sb_reset(gptCtx->sbptWindows);
+    for(uint32_t i = 0; i < plu_sb_size(gptCtx->sbptFocusedWindows); i++)
     {
         plUiWindow* ptRootWindow = gptCtx->sbptFocusedWindows[i];
 
@@ -577,24 +577,24 @@ pl_end_frame(void)
         if(ptRootWindow->tPos.y > gptCtx->tIO.afMainViewportSize[1])
         {
             ptRootWindow->tPos.y = gptCtx->tIO.afMainViewportSize[1] - ptRootWindow->tSize.y / 2.0f;
-            ptRootWindow->tPos.y = pl_maxf(ptRootWindow->tPos.y, 0.0f);
+            ptRootWindow->tPos.y = plu_maxf(ptRootWindow->tPos.y, 0.0f);
         }
     }
 
     // move newly activated window to front of focus order
     if(gptCtx->bActiveIdJustActivated)
     {
-        pl_sb_top(gptCtx->sbptFocusedWindows)->uFocusOrder = gptCtx->ptActiveWindow->uFocusOrder;
-        gptCtx->ptActiveWindow->uFocusOrder = pl_sb_size(gptCtx->sbptFocusedWindows) - 1;
-        pl_sb_del_swap(gptCtx->sbptFocusedWindows, pl_sb_top(gptCtx->sbptFocusedWindows)->uFocusOrder);
-        pl_sb_push(gptCtx->sbptFocusedWindows, gptCtx->ptActiveWindow);
+        plu_sb_top(gptCtx->sbptFocusedWindows)->uFocusOrder = gptCtx->ptActiveWindow->uFocusOrder;
+        gptCtx->ptActiveWindow->uFocusOrder = plu_sb_size(gptCtx->sbptFocusedWindows) - 1;
+        plu_sb_del_swap(gptCtx->sbptFocusedWindows, plu_sb_top(gptCtx->sbptFocusedWindows)->uFocusOrder);
+        plu_sb_push(gptCtx->sbptFocusedWindows, gptCtx->ptActiveWindow);
     }
 
     // scrolling window
     if(gptCtx->ptWheelingWindow)
     {
         gptCtx->ptWheelingWindow->tScroll.y -= pl_get_mouse_wheel() * 10.0f;
-        gptCtx->ptWheelingWindow->tScroll.y = pl_clampf(0.0f, gptCtx->ptWheelingWindow->tScroll.y, gptCtx->ptWheelingWindow->tScrollMax.y);
+        gptCtx->ptWheelingWindow->tScroll.y = plu_clampf(0.0f, gptCtx->ptWheelingWindow->tScroll.y, gptCtx->ptWheelingWindow->tScrollMax.y);
     }
 
     // moving window
@@ -608,26 +608,26 @@ pl_end_frame(void)
             gptCtx->ptMovingWindow->tPos.y = gptCtx->ptMovingWindow->tPos.y + pl_get_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT, 2.0f).y;  
 
         // clamp x
-        gptCtx->ptMovingWindow->tPos.x = pl_maxf(gptCtx->ptMovingWindow->tPos.x, -gptCtx->ptMovingWindow->tSize.x / 2.0f);   
-        gptCtx->ptMovingWindow->tPos.x = pl_minf(gptCtx->ptMovingWindow->tPos.x, gptCtx->tIO.afMainViewportSize[0] - gptCtx->ptMovingWindow->tSize.x / 2.0f);
+        gptCtx->ptMovingWindow->tPos.x = plu_maxf(gptCtx->ptMovingWindow->tPos.x, -gptCtx->ptMovingWindow->tSize.x / 2.0f);   
+        gptCtx->ptMovingWindow->tPos.x = plu_minf(gptCtx->ptMovingWindow->tPos.x, gptCtx->tIO.afMainViewportSize[0] - gptCtx->ptMovingWindow->tSize.x / 2.0f);
 
         // clamp y
-        gptCtx->ptMovingWindow->tPos.y = pl_maxf(gptCtx->ptMovingWindow->tPos.y, 0.0f);   
-        gptCtx->ptMovingWindow->tPos.y = pl_minf(gptCtx->ptMovingWindow->tPos.y, gptCtx->tIO.afMainViewportSize[1] - 50.0f);
+        gptCtx->ptMovingWindow->tPos.y = plu_maxf(gptCtx->ptMovingWindow->tPos.y, 0.0f);   
+        gptCtx->ptMovingWindow->tPos.y = plu_minf(gptCtx->ptMovingWindow->tPos.y, gptCtx->tIO.afMainViewportSize[1] - 50.0f);
 
         pl_reset_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT);
     }
 
     gptCtx->tIO._fMouseWheel = 0.0f;
     gptCtx->tIO._fMouseWheelH = 0.0f;
-    pl_sb_reset(gptCtx->tIO._sbInputQueueCharacters);
+    plu_sb_reset(gptCtx->tIO._sbInputQueueCharacters);
 }
 
 void
 pl_render(void)
 {
     pl_submit_layer(gptCtx->ptBgLayer);
-    for(uint32_t i = 0; i < pl_sb_size(gptCtx->sbptWindows); i++)
+    for(uint32_t i = 0; i < plu_sb_size(gptCtx->sbptWindows); i++)
     {
         if(gptCtx->sbptWindows[i]->uHideFrames == 0)
         {
@@ -725,16 +725,16 @@ pl_end_window(void)
     // set content sized based on last frames maximum cursor position
     if(ptWindow->bVisible)
     {
-        ptWindow->tContentSize = pl_add_vec2(
+        ptWindow->tContentSize = plu_add_vec2(
             (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, gptCtx->tStyle.fWindowVerticalPadding}, 
-            pl_sub_vec2(ptWindow->tTempData.tCursorMaxPos, ptWindow->tTempData.tCursorStartPos)
+            plu_sub_vec2(ptWindow->tTempData.tCursorMaxPos, ptWindow->tTempData.tCursorStartPos)
         
         );
     }
-    ptWindow->tScrollMax = pl_sub_vec2(ptWindow->tContentSize, (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
+    ptWindow->tScrollMax = plu_sub_vec2(ptWindow->tContentSize, (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
     
     // clamp scrolling max
-    ptWindow->tScrollMax = pl_max_vec2(ptWindow->tScrollMax, (plVec2){0});
+    ptWindow->tScrollMax = plu_max_vec2(ptWindow->tScrollMax, (plVec2){0});
     ptWindow->bScrollbarX = ptWindow->tScrollMax.x > 0.0f;
     ptWindow->bScrollbarY = ptWindow->tScrollMax.y > 0.0f;
 
@@ -750,13 +750,13 @@ pl_end_window(void)
         fTitleBarHeight = 0.0f;
 
     // clamp window size to min/max
-    ptWindow->tSize = pl_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
+    ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
 
     // autosized non collapsed
     if(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_AUTO_SIZE && !ptWindow->bCollapsed)
     {
 
-        const plRect tBgRect = pl_calculate_rect(
+        const plRect tBgRect = plu_calculate_rect(
             (plVec2){ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight},
             (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
 
@@ -765,9 +765,9 @@ pl_end_window(void)
         ptWindow->tSize.y = fTitleBarHeight + ptWindow->tContentSize.y + gptCtx->tStyle.fWindowVerticalPadding;
         
         // clamp window size to min/max
-        ptWindow->tSize = pl_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
+        ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
 
-        ptWindow->tOuterRect = pl_calculate_rect(ptWindow->tPos, ptWindow->tSize);
+        ptWindow->tOuterRect = plu_calculate_rect(ptWindow->tPos, ptWindow->tSize);
         ptWindow->tOuterRectClipped = ptWindow->tOuterRect;
         
         // remove scissor rect
@@ -784,7 +784,7 @@ pl_end_window(void)
     {
         plUiWindow* ptParentWindow = ptWindow->ptParentWindow;
 
-        plRect tBgRect = pl_calculate_rect(
+        plRect tBgRect = plu_calculate_rect(
             (plVec2){ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight},
             (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
 
@@ -792,7 +792,7 @@ pl_end_window(void)
 
         if(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW)
         {
-            tBgRect = pl_rect_clip(&tBgRect, &tParentBgRect);
+            tBgRect = plu_rect_clip(&tBgRect, &tParentBgRect);
         }
 
         pl_pop_clip_rect(gptCtx->ptDrawlist);
@@ -819,18 +819,18 @@ pl_end_window(void)
         if(ptWindow->bScrollbarX)
             pl_render_scrollbar(ptWindow, uHorizonatalScrollHash, PL_UI_AXIS_X);
 
-        const plVec2 tTopLeft = pl_rect_top_left(&ptWindow->tOuterRect);
-        const plVec2 tBottomLeft = pl_rect_bottom_left(&ptWindow->tOuterRect);
-        const plVec2 tTopRight = pl_rect_top_right(&ptWindow->tOuterRect);
-        const plVec2 tBottomRight = pl_rect_bottom_right(&ptWindow->tOuterRect);
+        const plVec2 tTopLeft = plu_rect_top_left(&ptWindow->tOuterRect);
+        const plVec2 tBottomLeft = plu_rect_bottom_left(&ptWindow->tOuterRect);
+        const plVec2 tTopRight = plu_rect_top_right(&ptWindow->tOuterRect);
+        const plVec2 tBottomRight = plu_rect_bottom_right(&ptWindow->tOuterRect);
 
         // resizing grip
         {
-            const plVec2 tCornerTopLeftPos = pl_add_vec2(tBottomRight, (plVec2){-15.0f, -15.0f});
-            const plVec2 tCornerTopPos = pl_add_vec2(tBottomRight, (plVec2){0.0f, -15.0f});
-            const plVec2 tCornerLeftPos = pl_add_vec2(tBottomRight, (plVec2){-15.0f, 0.0f});
+            const plVec2 tCornerTopLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, -15.0f});
+            const plVec2 tCornerTopPos = plu_add_vec2(tBottomRight, (plVec2){0.0f, -15.0f});
+            const plVec2 tCornerLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, 0.0f});
 
-            const plRect tBoundingBox = pl_calculate_rect(tCornerTopLeftPos, (plVec2){15.0f, 15.0f});
+            const plRect tBoundingBox = plu_calculate_rect(tCornerTopLeftPos, (plVec2){15.0f, 15.0f});
             bool bHovered = false;
             bool bHeld = false;
             const bool bPressed = pl_button_behavior(&tBoundingBox, uResizeHash, &bHovered, &bHeld);
@@ -854,8 +854,8 @@ pl_end_window(void)
         // east border
         {
 
-            plRect tBoundingBox = pl_calculate_rect(tTopRight, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
-            tBoundingBox = pl_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
+            plRect tBoundingBox = plu_calculate_rect(tTopRight, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
+            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
 
             bool bHovered = false;
             bool bHeld = false;
@@ -875,8 +875,8 @@ pl_end_window(void)
 
         // west border
         {
-            plRect tBoundingBox = pl_calculate_rect(tTopLeft, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
-            tBoundingBox = pl_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
+            plRect tBoundingBox = plu_calculate_rect(tTopLeft, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
+            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
 
             bool bHovered = false;
             bool bHeld = false;
@@ -897,7 +897,7 @@ pl_end_window(void)
         // north border
         {
             plRect tBoundingBox = {tTopLeft, (plVec2){tTopRight.x - 15.0f, tTopRight.y}};
-            tBoundingBox = pl_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
+            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
 
             bool bHovered = false;
             bool bHeld = false;
@@ -918,7 +918,7 @@ pl_end_window(void)
         // south border
         {
             plRect tBoundingBox = {tBottomLeft, (plVec2){tBottomRight.x - 15.0f, tBottomRight.y}};
-            tBoundingBox = pl_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
+            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
 
             bool bHovered = false;
             bool bHeld = false;
@@ -947,9 +947,9 @@ pl_end_window(void)
             if(gptCtx->uActiveId == uResizeHash)
             {  
                 gptCtx->ptSizingWindow = ptWindow;
-                ptWindow->tSize = pl_sub_vec2(tMousePos, ptWindow->tPos);
-                ptWindow->tSize = pl_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
-                ptWindow->tScroll = pl_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
+                ptWindow->tSize = plu_sub_vec2(tMousePos, ptWindow->tPos);
+                ptWindow->tSize = plu_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
+                ptWindow->tScroll = plu_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
             }
 
             // handle east resizing
@@ -957,8 +957,8 @@ pl_end_window(void)
             {
                 gptCtx->ptSizingWindow = ptWindow;
                 ptWindow->tSize.x = tMousePos.x - ptWindow->tPos.x;
-                ptWindow->tSize = pl_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
-                ptWindow->tScroll = pl_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
+                ptWindow->tSize = plu_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
+                ptWindow->tScroll = plu_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
             }
 
             // handle west resizing
@@ -966,9 +966,9 @@ pl_end_window(void)
             {
                 gptCtx->ptSizingWindow = ptWindow;
                 ptWindow->tSize.x = tTopRight.x - tMousePos.x;  
-                ptWindow->tSize = pl_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
+                ptWindow->tSize = plu_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
                 ptWindow->tPos.x = tTopRight.x - ptWindow->tSize.x;
-                ptWindow->tScroll = pl_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
+                ptWindow->tScroll = plu_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
             }
 
             // handle north resizing
@@ -976,9 +976,9 @@ pl_end_window(void)
             {
                 gptCtx->ptSizingWindow = ptWindow;
                 ptWindow->tSize.y = tBottomRight.y - tMousePos.y;  
-                ptWindow->tSize = pl_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
+                ptWindow->tSize = plu_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
                 ptWindow->tPos.y = tBottomRight.y - ptWindow->tSize.y;
-                ptWindow->tScroll = pl_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
+                ptWindow->tScroll = plu_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
             }
 
             // handle south resizing
@@ -986,8 +986,8 @@ pl_end_window(void)
             {
                 gptCtx->ptSizingWindow = ptWindow;
                 ptWindow->tSize.y = tMousePos.y - ptWindow->tPos.y;
-                ptWindow->tSize = pl_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
-                ptWindow->tScroll = pl_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
+                ptWindow->tSize = plu_max_vec2(ptWindow->tSize, ptWindow->tMinSize);
+                ptWindow->tScroll = plu_clamp_vec2((plVec2){0}, ptWindow->tScroll, ptWindow->tScrollMax);
             }
 
             // handle vertical scrolling with scroll bar
@@ -999,7 +999,7 @@ pl_end_window(void)
                 {
                     const float fScrollConversion = roundf(ptWindow->tContentSize.y / ptWindow->tSize.y);
                     ptWindow->tScroll.y += pl_get_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT, 1.0f).y * fScrollConversion;
-                    ptWindow->tScroll.y = pl_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
+                    ptWindow->tScroll.y = plu_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
                     pl_reset_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT);
                 }
             }
@@ -1013,7 +1013,7 @@ pl_end_window(void)
                 {
                     const float fScrollConversion = roundf(ptWindow->tContentSize.x / ptWindow->tSize.x);
                     ptWindow->tScroll.x += pl_get_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT, 1.0f).x * fScrollConversion;
-                    ptWindow->tScroll.x = pl_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
+                    ptWindow->tScroll.x = plu_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
                     pl_reset_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT);
                 }
             }
@@ -1022,13 +1022,13 @@ pl_end_window(void)
     }
 
     gptCtx->ptCurrentWindow = NULL;
-    pl_sb_pop(gptCtx->sbuIdStack);
+    plu_sb_pop(gptCtx->sbuIdStack);
 }
 
 plDrawLayer*
 pl_get_window_fg_drawlayer(void)
 {
-    PL_ASSERT(gptCtx->ptCurrentWindow && "no current window");
+    PL_UI_ASSERT(gptCtx->ptCurrentWindow && "no current window");
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     return ptWindow->ptFgLayer;
 }
@@ -1036,7 +1036,7 @@ pl_get_window_fg_drawlayer(void)
 plDrawLayer*
 pl_get_window_bg_drawlayer(void)
 {
-    PL_ASSERT(gptCtx->ptCurrentWindow && "no current window");
+    PL_UI_ASSERT(gptCtx->ptCurrentWindow && "no current window");
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     return ptWindow->ptBgLayer; 
 }
@@ -1068,7 +1068,7 @@ pl_begin_child(const char* pcName)
     if(bValue)
     {
         plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
-        ptWindow->tMinSize = pl_min_vec2(ptWindow->tMinSize, tWidgetSize);
+        ptWindow->tMinSize = plu_min_vec2(ptWindow->tMinSize, tWidgetSize);
         pl_layout_row(PL_UI_LAYOUT_ROW_TYPE_STATIC, 0.0f, 1, pfRatios);
     }
     else
@@ -1087,16 +1087,16 @@ pl_end_child(void)
     // set content sized based on last frames maximum cursor position
     if(ptWindow->bVisible)
     {
-        ptWindow->tContentSize = pl_add_vec2(
+        ptWindow->tContentSize = plu_add_vec2(
             (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, gptCtx->tStyle.fWindowVerticalPadding}, 
-            pl_sub_vec2(ptWindow->tTempData.tCursorMaxPos, ptWindow->tTempData.tCursorStartPos)
+            plu_sub_vec2(ptWindow->tTempData.tCursorMaxPos, ptWindow->tTempData.tCursorStartPos)
         
         );
     }
-    ptWindow->tScrollMax = pl_sub_vec2(ptWindow->tContentSize, ptWindow->tSize);
+    ptWindow->tScrollMax = plu_sub_vec2(ptWindow->tContentSize, ptWindow->tSize);
     
     // clamp scrolling max
-    ptWindow->tScrollMax = pl_max_vec2(ptWindow->tScrollMax, (plVec2){0});
+    ptWindow->tScrollMax = plu_max_vec2(ptWindow->tScrollMax, (plVec2){0});
     ptWindow->bScrollbarX = ptWindow->tScrollMax.x > 0.0f;
     ptWindow->bScrollbarY = ptWindow->tScrollMax.y > 0.0f;
 
@@ -1107,15 +1107,15 @@ pl_end_child(void)
     }
 
     // clamp window size to min/max
-    ptWindow->tSize = pl_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
+    ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
 
     plRect tParentBgRect = ptParentWindow->tOuterRect;
-    const plRect tBgRect = pl_rect_clip(&ptWindow->tOuterRect, &tParentBgRect);
+    const plRect tBgRect = plu_rect_clip(&ptWindow->tOuterRect, &tParentBgRect);
 
     pl_pop_clip_rect(gptCtx->ptDrawlist);
 
-    const uint32_t uVerticalScrollHash = pl_str_hash("##scrollright", 0, pl_sb_top(gptCtx->sbuIdStack));
-    const uint32_t uHorizonatalScrollHash = pl_str_hash("##scrollbottom", 0, pl_sb_top(gptCtx->sbuIdStack));
+    const uint32_t uVerticalScrollHash = plu_str_hash("##scrollright", 0, plu_sb_top(gptCtx->sbuIdStack));
+    const uint32_t uHorizonatalScrollHash = plu_str_hash("##scrollbottom", 0, plu_sb_top(gptCtx->sbuIdStack));
 
     // draw background
     pl_add_rect_filled(ptParentWindow->ptBgLayer, tBgRect.tMin, tBgRect.tMax, gptCtx->tColorScheme.tWindowBgColor);
@@ -1135,7 +1135,7 @@ pl_end_child(void)
         gptCtx->ptScrollingWindow = ptWindow;
         gptCtx->uNextHoveredId = uVerticalScrollHash;
         ptWindow->tScroll.y += pl_get_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT, 1.0f).y * fScrollConversion;
-        ptWindow->tScroll.y = pl_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
+        ptWindow->tScroll.y = plu_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
         pl_reset_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT);
     }
 
@@ -1146,12 +1146,12 @@ pl_end_child(void)
         gptCtx->ptScrollingWindow = ptWindow;
         gptCtx->uNextHoveredId = uHorizonatalScrollHash;
         ptWindow->tScroll.x += pl_get_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT, 1.0f).x * fScrollConversion;
-        ptWindow->tScroll.x = pl_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
+        ptWindow->tScroll.x = plu_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
         pl_reset_mouse_drag_delta(PL_MOUSE_BUTTON_LEFT);
     }
 
     ptWindow->tFullSize = ptWindow->tSize;
-    pl_sb_pop(gptCtx->sbuIdStack);
+    plu_sb_pop(gptCtx->sbuIdStack);
     gptCtx->ptCurrentWindow = ptParentWindow;
 
     pl_advance_cursor(ptWindow->tSize.x, ptWindow->tSize.y);
@@ -1162,9 +1162,9 @@ pl_begin_tooltip(void)
 {
     plUiWindow* ptWindow = &gptCtx->tTooltipWindow;
 
-    ptWindow->tContentSize = pl_add_vec2(
+    ptWindow->tContentSize = plu_add_vec2(
         (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, gptCtx->tStyle.fWindowVerticalPadding},
-        pl_sub_vec2(
+        plu_sub_vec2(
             ptWindow->tTempData.tCursorMaxPos, 
             ptWindow->tTempData.tCursorStartPos)
     );
@@ -1181,14 +1181,14 @@ pl_begin_tooltip(void)
 
     // place window at mouse position
     const plVec2 tMousePos = pl_get_mouse_pos();
-    ptWindow->tTempData.tCursorStartPos = pl_add_vec2(tMousePos, (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, 0.0f});
+    ptWindow->tTempData.tCursorStartPos = plu_add_vec2(tMousePos, (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, 0.0f});
     ptWindow->tPos = tMousePos;
     ptWindow->tTempData.tRowPos.x = floorf(gptCtx->tStyle.fWindowHorizontalPadding + tMousePos.x);
     ptWindow->tTempData.tRowPos.y = floorf(gptCtx->tStyle.fWindowVerticalPadding + tMousePos.y);
 
     const plVec2 tStartClip = { ptWindow->tPos.x, ptWindow->tPos.y };
     const plVec2 tEndClip = { ptWindow->tSize.x, ptWindow->tSize.y };
-    pl_push_clip_rect(gptCtx->ptDrawlist, pl_calculate_rect(tStartClip, tEndClip), false);
+    pl_push_clip_rect(gptCtx->ptDrawlist, plu_calculate_rect(tStartClip, tEndClip), false);
 
     ptWindow->ptParentWindow = gptCtx->ptCurrentWindow;
     gptCtx->ptCurrentWindow = ptWindow;
@@ -1207,7 +1207,7 @@ pl_end_tooltip(void)
 
     pl_add_rect_filled(ptWindow->ptBgLayer,
         ptWindow->tPos, 
-        pl_add_vec2(ptWindow->tPos, ptWindow->tSize), gptCtx->tColorScheme.tWindowBgColor);
+        plu_add_vec2(ptWindow->tPos, ptWindow->tSize), gptCtx->tColorScheme.tWindowBgColor);
 
     pl_pop_clip_rect(gptCtx->ptDrawlist);
     gptCtx->ptCurrentWindow = ptWindow->ptParentWindow;
@@ -1296,7 +1296,7 @@ pl_step_clipper(plUiClipper* ptClipper)
         if(ptClipper->_fStartPosY < pl_get_window_pos().y)
             ptClipper->uDisplayStart = (uint32_t)((pl_get_window_pos().y - ptClipper->_fStartPosY) / ptClipper->_fItemHeight);
         ptClipper->uDisplayEnd = ptClipper->uDisplayStart + (uint32_t)(pl_get_window_size().y / ptClipper->_fItemHeight) + 1;
-        ptClipper->uDisplayEnd = pl_minu(ptClipper->uDisplayEnd, ptClipper->uItemCount) + 1;
+        ptClipper->uDisplayEnd = plu_minu(ptClipper->uDisplayEnd, ptClipper->uItemCount) + 1;
         if(ptClipper->uDisplayStart > 0)
             ptClipper->uDisplayStart--;
 
@@ -1377,7 +1377,7 @@ pl_layout_row_push(float fWidth)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
-    PL_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_ROW_XXX);
+    PL_UI_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_ROW_XXX);
     ptCurrentRow->fWidth = fWidth;
 }
 
@@ -1386,9 +1386,9 @@ pl_layout_row_end(void)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
-    PL_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_ROW_XXX);
-    ptWindow->tTempData.tCursorMaxPos.x = pl_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
-    ptWindow->tTempData.tCursorMaxPos.y = pl_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
+    PL_UI_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_ROW_XXX);
+    ptWindow->tTempData.tCursorMaxPos.x = plu_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
+    ptWindow->tTempData.tCursorMaxPos.y = plu_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
     ptWindow->tTempData.tRowPos.y = ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight + gptCtx->tStyle.tItemSpacing.y;
 
     // temp
@@ -1422,7 +1422,7 @@ pl_layout_template_begin(float fHeight)
         .tType            = PL_UI_LAYOUT_ROW_TYPE_NONE,
         .tSystemType      = PL_UI_LAYOUT_SYSTEM_TYPE_TEMPLATE,
         .uColumns         = 0,
-        .uEntryStartIndex = pl_sb_size(ptWindow->sbtRowTemplateEntries)
+        .uEntryStartIndex = plu_sb_size(ptWindow->sbtRowTemplateEntries)
     };
     ptWindow->tTempData.tCurrentLayoutRow = tNewRow;
 }
@@ -1433,9 +1433,9 @@ pl_layout_template_push_dynamic(void)
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
     ptCurrentRow->uDynamicEntryCount++;
-    pl_sb_add(ptWindow->sbtRowTemplateEntries);
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_DYNAMIC;
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = 0.0f;
+    plu_sb_add(ptWindow->sbtRowTemplateEntries);
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_DYNAMIC;
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = 0.0f;
     ptCurrentRow->uColumns++;
 }
 
@@ -1446,10 +1446,10 @@ pl_layout_template_push_variable(float fWidth)
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
     ptCurrentRow->uVariableEntryCount++;
     ptCurrentRow->fWidth += fWidth;
-    pl_sb_push(ptWindow->sbuTempLayoutIndexSort, ptCurrentRow->uColumns);
-    pl_sb_add(ptWindow->sbtRowTemplateEntries);
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_VARIABLE;
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = fWidth;
+    plu_sb_push(ptWindow->sbuTempLayoutIndexSort, ptCurrentRow->uColumns);
+    plu_sb_add(ptWindow->sbtRowTemplateEntries);
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_VARIABLE;
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = fWidth;
     ptCurrentRow->uColumns++;
     ptWindow->tTempData.fTempMinWidth += fWidth;
 }
@@ -1461,9 +1461,9 @@ pl_layout_template_push_static(float fWidth)
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
     ptCurrentRow->fWidth += fWidth;
     ptCurrentRow->uStaticEntryCount++;
-    pl_sb_add(ptWindow->sbtRowTemplateEntries);
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_STATIC;
-    pl_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = fWidth;
+    plu_sb_add(ptWindow->sbtRowTemplateEntries);
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).tType = PL_UI_LAYOUT_ROW_ENTRY_TYPE_STATIC;
+    plu_sb_back(ptWindow->sbtRowTemplateEntries).fWidth = fWidth;
     ptCurrentRow->uColumns++;
     ptWindow->tTempData.fTempStaticWidth += fWidth;
     ptWindow->tTempData.fTempMinWidth += fWidth;
@@ -1474,9 +1474,9 @@ pl_layout_template_end(void)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
-    PL_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_TEMPLATE);
-    ptWindow->tTempData.tCursorMaxPos.x = pl_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
-    ptWindow->tTempData.tCursorMaxPos.y = pl_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
+    PL_UI_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_TEMPLATE);
+    ptWindow->tTempData.tCursorMaxPos.x = plu_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
+    ptWindow->tTempData.tCursorMaxPos.y = plu_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
     ptWindow->tTempData.tRowPos.y = ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight + gptCtx->tStyle.tItemSpacing.y;
 
     // total available width minus padding/spacing
@@ -1532,7 +1532,7 @@ pl_layout_template_end(void)
             {
                 plUiLayoutRowEntry* ptEntry = &ptWindow->sbtRowTemplateEntries[ptCurrentRow->uEntryStartIndex + i];
                 if(ptEntry->tType == PL_UI_LAYOUT_ROW_ENTRY_TYPE_DYNAMIC)
-                    pl_sb_push(ptWindow->sbuTempLayoutIndexSort, i);
+                    plu_sb_push(ptWindow->sbuTempLayoutIndexSort, i);
             }
         }
 
@@ -1545,7 +1545,7 @@ pl_layout_template_end(void)
 
             if(ptEntry->fWidth == fCurrentWidth)
             {
-                pl_sb_back(ptWindow->sbtTempLayoutSort).uCount++;
+                plu_sb_back(ptWindow->sbtTempLayoutSort).uCount++;
             }
             else
             {
@@ -1554,7 +1554,7 @@ pl_layout_template_end(void)
                     .uCount      = 1,
                     .uStartIndex = i
                 };
-                pl_sb_push(ptWindow->sbtTempLayoutSort, tNewSortLevel);
+                plu_sb_push(ptWindow->sbtTempLayoutSort, tNewSortLevel);
                 fCurrentWidth = ptEntry->fWidth;
             }
         }
@@ -1567,17 +1567,17 @@ pl_layout_template_end(void)
                 .uCount      = ptCurrentRow->uDynamicEntryCount,
                 .uStartIndex = ptCurrentRow->uVariableEntryCount
             };
-            pl_sb_push(ptWindow->sbtTempLayoutSort, tInitialSortLevel);
+            plu_sb_push(ptWindow->sbtTempLayoutSort, tInitialSortLevel);
         }
 
         // calculate left over width
         float fExtraWidth = fWidthAvailable - ptWindow->tTempData.fTempMinWidth;
 
         // distribute to levels
-        const uint32_t uLevelCount = pl_sb_size(ptWindow->sbtTempLayoutSort);
+        const uint32_t uLevelCount = plu_sb_size(ptWindow->sbtTempLayoutSort);
         if(uLevelCount == 1)
         {
-            plUiLayoutSortLevel tCurrentSortLevel = pl_sb_pop(ptWindow->sbtTempLayoutSort);
+            plUiLayoutSortLevel tCurrentSortLevel = plu_sb_pop(ptWindow->sbtTempLayoutSort);
             const float fDistributableWidth = fExtraWidth / (float)tCurrentSortLevel.uCount;
             for(uint32_t i = tCurrentSortLevel.uStartIndex; i < tCurrentSortLevel.uCount; i++)
             {
@@ -1589,9 +1589,9 @@ pl_layout_template_end(void)
         {
             while(fExtraWidth > 0.0f)
             {
-                plUiLayoutSortLevel tCurrentSortLevel = pl_sb_pop(ptWindow->sbtTempLayoutSort);
+                plUiLayoutSortLevel tCurrentSortLevel = plu_sb_pop(ptWindow->sbtTempLayoutSort);
 
-                if(pl_sb_size(ptWindow->sbtTempLayoutSort) == 0) // final
+                if(plu_sb_size(ptWindow->sbtTempLayoutSort) == 0) // final
                 {
                     const float fDistributableWidth = fExtraWidth / (float)tCurrentSortLevel.uCount;
                     for(uint32_t i = tCurrentSortLevel.uStartIndex; i < tCurrentSortLevel.uStartIndex + tCurrentSortLevel.uCount; i++)
@@ -1602,7 +1602,7 @@ pl_layout_template_end(void)
                     break;
                 }
                     
-                const float fDelta = pl_sb_back(ptWindow->sbtTempLayoutSort).fWidth - tCurrentSortLevel.fWidth;
+                const float fDelta = plu_sb_back(ptWindow->sbtTempLayoutSort).fWidth - tCurrentSortLevel.fWidth;
                 const float fTotalOwed = fDelta * (float)tCurrentSortLevel.uCount;
                 
                 if(fTotalOwed < fExtraWidth) // perform operations
@@ -1612,7 +1612,7 @@ pl_layout_template_end(void)
                         plUiLayoutRowEntry* ptEntry = &ptWindow->sbtRowTemplateEntries[ptCurrentRow->uEntryStartIndex + ptWindow->sbuTempLayoutIndexSort[i]];
                         ptEntry->fWidth += fDelta;
                     }
-                    pl_sb_back(ptWindow->sbtTempLayoutSort).uCount += tCurrentSortLevel.uCount;
+                    plu_sb_back(ptWindow->sbtTempLayoutSort).uCount += tCurrentSortLevel.uCount;
                     fExtraWidth -= fTotalOwed;
                 }
                 else // do the best we can
@@ -1630,8 +1630,8 @@ pl_layout_template_end(void)
 
     }
 
-    pl_sb_reset(ptWindow->sbuTempLayoutIndexSort);
-    pl_sb_reset(ptWindow->sbtTempLayoutSort);
+    plu_sb_reset(ptWindow->sbuTempLayoutIndexSort);
+    plu_sb_reset(ptWindow->sbtTempLayoutSort);
     ptWindow->tTempData.fTempMinWidth = 0.0f;
     ptWindow->tTempData.fTempStaticWidth = 0.0f;
 }
@@ -1656,7 +1656,7 @@ pl_layout_space_push(float fX, float fY, float fWidth, float fHeight)
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
 
-    PL_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_SPACE);
+    PL_UI_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_SPACE);
     ptCurrentRow->fHorizontalOffset = ptCurrentRow->tType == PL_UI_LAYOUT_ROW_TYPE_DYNAMIC ? fX * ptWindow->tSize.x : fX;
     ptCurrentRow->fVerticalOffset = fY * ptCurrentRow->fSpecifiedHeight;
     ptCurrentRow->fWidth = fWidth;
@@ -1668,9 +1668,9 @@ pl_layout_space_end(void)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
     plUiLayoutRow* ptCurrentRow = &ptWindow->tTempData.tCurrentLayoutRow;
-    PL_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_SPACE);
-    ptWindow->tTempData.tCursorMaxPos.x = pl_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
-    ptWindow->tTempData.tCursorMaxPos.y = pl_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
+    PL_UI_ASSERT(ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_SPACE);
+    ptWindow->tTempData.tCursorMaxPos.x = plu_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, ptWindow->tTempData.tCursorMaxPos.x);
+    ptWindow->tTempData.tCursorMaxPos.y = plu_maxf(ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight, ptWindow->tTempData.tCursorMaxPos.y);
     ptWindow->tTempData.tRowPos.y = ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight + gptCtx->tStyle.tItemSpacing.y;
 
     // temp
@@ -1694,7 +1694,7 @@ int
 pl_get_int(plUiStorage* ptStorage, uint32_t uKey, int iDefaultValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if((ptIterator == pl_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
+    if((ptIterator == plu_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
         return iDefaultValue;
     return ptIterator->iValue;
 }
@@ -1703,7 +1703,7 @@ float
 pl_get_float(plUiStorage* ptStorage, uint32_t uKey, float fDefaultValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if((ptIterator == pl_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
+    if((ptIterator == plu_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
         return fDefaultValue;
     return ptIterator->fValue;
 }
@@ -1718,7 +1718,7 @@ void*
 pl_get_ptr(plUiStorage* ptStorage, uint32_t uKey)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if((ptIterator == pl_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
+    if((ptIterator == plu_sb_end(ptStorage->sbtData)) || (ptIterator->uKey != uKey))
         return NULL;
     return ptIterator->pValue;    
 }
@@ -1727,10 +1727,10 @@ int*
 pl_get_int_ptr(plUiStorage* ptStorage, uint32_t uKey, int iDefaultValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .iValue = iDefaultValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .iValue = iDefaultValue}));
         ptIterator = &ptStorage->sbtData[uIndex];
     }    
     return &ptIterator->iValue;
@@ -1740,10 +1740,10 @@ float*
 pl_get_float_ptr(plUiStorage* ptStorage, uint32_t uKey, float fDefaultValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .fValue = fDefaultValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .fValue = fDefaultValue}));
         ptIterator = &ptStorage->sbtData[uIndex];
     }    
     return &ptIterator->fValue;
@@ -1759,10 +1759,10 @@ void**
 pl_get_ptr_ptr(plUiStorage* ptStorage, uint32_t uKey, void* pDefaultValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .pValue = pDefaultValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .pValue = pDefaultValue}));
         ptIterator = &ptStorage->sbtData[uIndex];
     }    
     return &ptIterator->pValue;
@@ -1772,10 +1772,10 @@ void
 pl_set_int(plUiStorage* ptStorage, uint32_t uKey, int iValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .iValue = iValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .iValue = iValue}));
         return;
     }
     ptIterator->iValue = iValue;
@@ -1785,10 +1785,10 @@ void
 pl_set_float(plUiStorage* ptStorage, uint32_t uKey, float fValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .fValue = fValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .fValue = fValue}));
         return;
     }
     ptIterator->fValue = fValue;
@@ -1804,10 +1804,10 @@ void
 pl_set_ptr(plUiStorage* ptStorage, uint32_t uKey, void* pValue)
 {
     plUiStorageEntry* ptIterator = pl_lower_bound(ptStorage->sbtData, uKey);
-    if(ptIterator == pl_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
+    if(ptIterator == plu_sb_end(ptStorage->sbtData) || (ptIterator->uKey != uKey))
     {
         uint32_t uIndex = (uint32_t)((uintptr_t)ptIterator - (uintptr_t)ptStorage->sbtData) / (uint32_t)sizeof(plUiStorageEntry);
-        pl_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .pValue = pValue}));
+        plu_sb_insert(ptStorage->sbtData, uIndex, ((plUiStorageEntry){.uKey = uKey, .pValue = pValue}));
         return;
     }
     ptIterator->pValue = pValue;    
@@ -1899,7 +1899,7 @@ plUiStorageEntry*
 pl_lower_bound(plUiStorageEntry* sbtData, uint32_t uKey)
 {
     plUiStorageEntry* ptFirstEntry = sbtData;
-    uint32_t uCount = pl_sb_size(sbtData);
+    uint32_t uCount = plu_sb_size(sbtData);
     while (uCount > 0)
     {
         uint32_t uCount2 = uCount >> 1;
@@ -1923,8 +1923,8 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     plUiWindow* ptParentWindow = gptCtx->ptCurrentWindow; // parent window if there any
 
     // generate hashed ID
-    const uint32_t uWindowID = pl_str_hash(pcName, 0, ptParentWindow ? pl_sb_top(gptCtx->sbuIdStack) : 0);
-    pl_sb_push(gptCtx->sbuIdStack, uWindowID);
+    const uint32_t uWindowID = plu_str_hash(pcName, 0, ptParentWindow ? plu_sb_top(gptCtx->sbuIdStack) : 0);
+    plu_sb_push(gptCtx->sbuIdStack, uWindowID);
 
     // title text & title bar sizes
     const plVec2 tTextSize = pl_ui_calculate_text_size(gptCtx->ptFont, gptCtx->tStyle.fFontSize, pcName, 0.0f);
@@ -1937,7 +1937,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     if(ptWindow == NULL)
     {
         // allocate new window
-        ptWindow = PL_ALLOC(sizeof(plUiWindow));
+        ptWindow = PL_UI_ALLOC(sizeof(plUiWindow));
         memset(ptWindow, 0, sizeof(plUiWindow));
         ptWindow->uId                     = uWindowID;
         ptWindow->pcName                  = pcName;
@@ -1951,13 +1951,13 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         ptWindow->tSizeAllowableFlags     = PL_UI_COND_ALWAYS | PL_UI_COND_ONCE;
         ptWindow->tCollapseAllowableFlags = PL_UI_COND_ALWAYS | PL_UI_COND_ONCE;
         ptWindow->ptParentWindow          = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? ptParentWindow : ptWindow;
-        ptWindow->uFocusOrder             = pl_sb_size(gptCtx->sbptFocusedWindows);
+        ptWindow->uFocusOrder             = plu_sb_size(gptCtx->sbptFocusedWindows);
         ptWindow->tFlags                  = PL_UI_WINDOW_FLAGS_NONE;
 
         // add to focused windows
         if(!(tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW))
         {
-            pl_sb_push(gptCtx->sbptFocusedWindows, ptWindow);
+            plu_sb_push(gptCtx->sbptFocusedWindows, ptWindow);
             ptWindow->ptRootWindow = ptWindow;
         }
         else
@@ -1980,17 +1980,17 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         // set window position to parent window current cursor
         ptWindow->tPos = tStartPos;
 
-        pl_sb_push(ptParentWindow->sbtChildWindows, ptWindow);
+        plu_sb_push(ptParentWindow->sbtChildWindows, ptWindow);
     }
 
     // reset per frame window temporary data
     memset(&ptWindow->tTempData, 0, sizeof(plUiTempWindowData));
-    pl_sb_reset(ptWindow->sbtChildWindows);
-    pl_sb_reset(ptWindow->sbtRowStack);
-    pl_sb_reset(ptWindow->sbtRowTemplateEntries);
+    plu_sb_reset(ptWindow->sbtChildWindows);
+    plu_sb_reset(ptWindow->sbtRowStack);
+    plu_sb_reset(ptWindow->sbtRowTemplateEntries);
 
     // clamp window size to min/max
-    ptWindow->tSize = pl_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
+    ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
 
     // should window collapse
     if(gptCtx->tNextWindowData.tFlags & PL_NEXT_WINDOW_DATA_FLAGS_HAS_COLLAPSED)
@@ -2039,7 +2039,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         ptWindow->tSize = (plVec2){ptWindow->tSize.x, fTitleBarHeight};
 
     // updating outer rect here but autosized windows do so again in pl_end_window(..)
-    ptWindow->tOuterRect = pl_calculate_rect(ptWindow->tPos, ptWindow->tSize);
+    ptWindow->tOuterRect = plu_calculate_rect(ptWindow->tPos, ptWindow->tSize);
     ptWindow->tOuterRectClipped = ptWindow->tOuterRect;
     ptWindow->tInnerRect = ptWindow->tOuterRect;
 
@@ -2063,10 +2063,10 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
             tTitleColor = gptCtx->tColorScheme.tTitleBgCollapsedCol;
         else
             tTitleColor = gptCtx->tColorScheme.tTitleBgCol;
-        pl_add_rect_filled(ptWindow->ptFgLayer, tStartPos, pl_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x, fTitleBarHeight}), tTitleColor);
+        pl_add_rect_filled(ptWindow->ptFgLayer, tStartPos, plu_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x, fTitleBarHeight}), tTitleColor);
 
         // draw title text
-        const plVec2 titlePos = pl_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x / 2.0f - tTextSize.x / 2.0f, gptCtx->tStyle.fTitlePadding});
+        const plVec2 titlePos = plu_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x / 2.0f - tTextSize.x / 2.0f, gptCtx->tStyle.fTitlePadding});
         pl_ui_add_text(ptWindow->ptFgLayer, gptCtx->ptFont, gptCtx->tStyle.fFontSize, titlePos, gptCtx->tColorScheme.tTextCol, pcName, 0.0f);
 
         // draw close button
@@ -2074,7 +2074,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         float fTitleButtonStartPos = fTitleBarButtonRadius * 2.0f;
         if(pbOpen)
         {
-            plVec2 tCloseCenterPos = pl_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x - fTitleButtonStartPos, fTitleBarHeight / 2.0f});
+            plVec2 tCloseCenterPos = plu_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x - fTitleButtonStartPos, fTitleBarHeight / 2.0f});
             fTitleButtonStartPos += fTitleBarButtonRadius * 2.0f + gptCtx->tStyle.tItemSpacing.x;
             if(pl_does_circle_contain_point(tCloseCenterPos, fTitleBarButtonRadius, tMousePos) && gptCtx->ptHoveredWindow == ptWindow)
             {
@@ -2089,7 +2089,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         if(!(tFlags & PL_UI_WINDOW_FLAGS_NO_COLLAPSE))
         {
             // draw collapse button
-            plVec2 tCollapsingCenterPos = pl_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x - fTitleButtonStartPos, fTitleBarHeight / 2.0f});
+            plVec2 tCollapsingCenterPos = plu_add_vec2(tStartPos, (plVec2){ptWindow->tSize.x - fTitleButtonStartPos, fTitleBarHeight / 2.0f});
             fTitleButtonStartPos += fTitleBarButtonRadius * 2.0f + gptCtx->tStyle.tItemSpacing.x;
 
             if(pl_does_circle_contain_point(tCollapsingCenterPos, fTitleBarButtonRadius, tMousePos) &&  gptCtx->ptHoveredWindow == ptWindow)
@@ -2118,7 +2118,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     }
 
     // remove padding for inner clip rect
-    ptWindow->tInnerClipRect = pl_rect_expand_vec2(&ptWindow->tInnerRect, (plVec2){-gptCtx->tStyle.fWindowHorizontalPadding, 0.0f});
+    ptWindow->tInnerClipRect = plu_rect_expand_vec2(&ptWindow->tInnerRect, (plVec2){-gptCtx->tStyle.fWindowHorizontalPadding, 0.0f});
 
     if(!ptWindow->bCollapsed)
     {
@@ -2129,10 +2129,10 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
             ptWindow->tSize.y - fTitleBarHeight - (ptWindow->bScrollbarX ? gptCtx->tStyle.fScrollbarSize + 2.0f : 0.0f)
         };
 
-        if(pl_sb_size(gptCtx->ptDrawlist->sbClipStack) > 0)
+        if(plu_sb_size(gptCtx->ptDrawlist->sbClipStack) > 0)
         {
-            ptWindow->tInnerClipRect = pl_rect_clip_full(&ptWindow->tInnerClipRect, &pl_sb_back(gptCtx->ptDrawlist->sbClipStack));
-            ptWindow->tOuterRectClipped = pl_rect_clip_full(&ptWindow->tOuterRectClipped, &pl_sb_back(gptCtx->ptDrawlist->sbClipStack));
+            ptWindow->tInnerClipRect = plu_rect_clip_full(&ptWindow->tInnerClipRect, &plu_sb_back(gptCtx->ptDrawlist->sbClipStack));
+            ptWindow->tOuterRectClipped = plu_rect_clip_full(&ptWindow->tOuterRectClipped, &plu_sb_back(gptCtx->ptDrawlist->sbClipStack));
         }
         pl_push_clip_rect(gptCtx->ptDrawlist, ptWindow->tInnerClipRect, false);
 
@@ -2142,7 +2142,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     ptWindow->tTempData.tCursorStartPos.x = gptCtx->tStyle.fWindowHorizontalPadding + tStartPos.x - ptWindow->tScroll.x;
     ptWindow->tTempData.tCursorStartPos.y = gptCtx->tStyle.fWindowVerticalPadding + tStartPos.y + fTitleBarHeight - ptWindow->tScroll.y;
     ptWindow->tTempData.tRowPos = ptWindow->tTempData.tCursorStartPos;
-    ptWindow->tTempData.tCursorStartPos = pl_floor_vec2(ptWindow->tTempData.tCursorStartPos);
+    ptWindow->tTempData.tCursorStartPos = plu_floor_vec2(ptWindow->tTempData.tCursorStartPos);
 
     // reset next window flags
     gptCtx->tNextWindowData.tFlags = PL_NEXT_WINDOW_DATA_FLAGS_NONE;
@@ -2150,8 +2150,8 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     gptCtx->ptCurrentWindow = ptWindow;
     if(tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW)
     {
-        ptWindow->bVisible = pl_rect_overlaps_rect(&ptWindow->tInnerClipRect, &ptParentWindow->tInnerClipRect);
-        return ptWindow->bVisible && !pl_rect_is_inverted(&ptWindow->tInnerClipRect);
+        ptWindow->bVisible = plu_rect_overlaps_rect(&ptWindow->tInnerClipRect, &ptParentWindow->tInnerClipRect);
+        return ptWindow->bVisible && !plu_rect_is_inverted(&ptWindow->tInnerClipRect);
     }
 
     ptWindow->bVisible = true;
@@ -2167,24 +2167,24 @@ pl_render_scrollbar(plUiWindow* ptWindow, uint32_t uHash, plUiAxis tAxis)
         const float fRightSidePadding = ptWindow->bScrollbarY ? gptCtx->tStyle.fScrollbarSize + 2.0f : 0.0f;
 
         // this is needed if autosizing and parent changes sizes
-        ptWindow->tScroll.x = pl_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
+        ptWindow->tScroll.x = plu_clampf(0.0f, ptWindow->tScroll.x, ptWindow->tScrollMax.x);
 
-        const float fScrollbarHandleSize  = pl_maxf(5.0f, floorf((ptWindow->tSize.x - fRightSidePadding) * ((ptWindow->tSize.x - fRightSidePadding) / (ptWindow->tContentSize.x))));
+        const float fScrollbarHandleSize  = plu_maxf(5.0f, floorf((ptWindow->tSize.x - fRightSidePadding) * ((ptWindow->tSize.x - fRightSidePadding) / (ptWindow->tContentSize.x))));
         const float fScrollbarHandleStart = floorf((ptWindow->tSize.x - fRightSidePadding - fScrollbarHandleSize) * (ptWindow->tScroll.x/(ptWindow->tScrollMax.x)));
         
-        const plVec2 tStartPos = pl_add_vec2(ptWindow->tPos, (plVec2){fScrollbarHandleStart, ptWindow->tSize.y - gptCtx->tStyle.fScrollbarSize - 2.0f});
+        const plVec2 tStartPos = plu_add_vec2(ptWindow->tPos, (plVec2){fScrollbarHandleStart, ptWindow->tSize.y - gptCtx->tStyle.fScrollbarSize - 2.0f});
         
         plRect tScrollBackground = {
-            pl_add_vec2(ptWindow->tPos, (plVec2){0.0f, ptWindow->tSize.y - gptCtx->tStyle.fScrollbarSize - 2.0f}),
-            pl_add_vec2(ptWindow->tPos, (plVec2){ptWindow->tSize.x - fRightSidePadding, ptWindow->tSize.y - 2.0f})
+            plu_add_vec2(ptWindow->tPos, (plVec2){0.0f, ptWindow->tSize.y - gptCtx->tStyle.fScrollbarSize - 2.0f}),
+            plu_add_vec2(ptWindow->tPos, (plVec2){ptWindow->tSize.x - fRightSidePadding, ptWindow->tSize.y - 2.0f})
         };
 
-        if(pl_rect_overlaps_rect(&tParentBgRect, &tScrollBackground))
+        if(plu_rect_overlaps_rect(&tParentBgRect, &tScrollBackground))
         {
             const plVec2 tFinalSize = {fScrollbarHandleSize, gptCtx->tStyle.fScrollbarSize};
-            plRect tHandleBox = pl_calculate_rect(tStartPos, tFinalSize);
-            tScrollBackground = pl_rect_clip(&tScrollBackground, &ptWindow->tOuterRectClipped);
-            tHandleBox = pl_rect_clip(&tHandleBox, &ptWindow->tOuterRectClipped);
+            plRect tHandleBox = plu_calculate_rect(tStartPos, tFinalSize);
+            tScrollBackground = plu_rect_clip(&tScrollBackground, &ptWindow->tOuterRectClipped);
+            tHandleBox = plu_rect_clip(&tHandleBox, &ptWindow->tOuterRectClipped);
 
             pl_add_rect_filled(ptWindow->ptBgLayer, tScrollBackground.tMin, tScrollBackground.tMax, gptCtx->tColorScheme.tScrollbarBgCol);
 
@@ -2192,11 +2192,11 @@ pl_render_scrollbar(plUiWindow* ptWindow, uint32_t uHash, plUiAxis tAxis)
             bool bHeld = false;
             const bool bPressed = pl_button_behavior(&tHandleBox, uHash, &bHovered, &bHeld);   
             if(gptCtx->uActiveId == uHash)
-                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, pl_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarActiveCol);
+                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, plu_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarActiveCol);
             else if(gptCtx->uHoveredId == uHash)
-                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, pl_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarHoveredCol);
+                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, plu_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarHoveredCol);
             else
-                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, pl_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarHandleCol);
+                pl_add_rect_filled(ptWindow->ptBgLayer, tStartPos, plu_add_vec2(tStartPos, tFinalSize), gptCtx->tColorScheme.tScrollbarHandleCol);
         }
     }
     else if(tAxis == PL_UI_AXIS_Y)
@@ -2206,24 +2206,24 @@ pl_render_scrollbar(plUiWindow* ptWindow, uint32_t uHash, plUiAxis tAxis)
         const float fTopPadding = (ptWindow->tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
 
         // this is needed if autosizing and parent changes sizes
-        ptWindow->tScroll.y = pl_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
+        ptWindow->tScroll.y = plu_clampf(0.0f, ptWindow->tScroll.y, ptWindow->tScrollMax.y);
 
-        const float fScrollbarHandleSize  = pl_maxf(5.0f, floorf((ptWindow->tSize.y - fTopPadding - fBottomPadding) * ((ptWindow->tSize.y - fTopPadding - fBottomPadding) / (ptWindow->tContentSize.y))));
+        const float fScrollbarHandleSize  = plu_maxf(5.0f, floorf((ptWindow->tSize.y - fTopPadding - fBottomPadding) * ((ptWindow->tSize.y - fTopPadding - fBottomPadding) / (ptWindow->tContentSize.y))));
         const float fScrollbarHandleStart = floorf((ptWindow->tSize.y - fTopPadding - fBottomPadding - fScrollbarHandleSize) * (ptWindow->tScroll.y / (ptWindow->tScrollMax.y)));
 
-        const plVec2 tStartPos = pl_add_vec2(ptWindow->tPos, (plVec2){ptWindow->tSize.x - gptCtx->tStyle.fScrollbarSize - 2.0f, fTopPadding + fScrollbarHandleStart});
+        const plVec2 tStartPos = plu_add_vec2(ptWindow->tPos, (plVec2){ptWindow->tSize.x - gptCtx->tStyle.fScrollbarSize - 2.0f, fTopPadding + fScrollbarHandleStart});
         
-        plRect tScrollBackground = pl_calculate_rect(pl_add_vec2(ptWindow->tPos, 
+        plRect tScrollBackground = plu_calculate_rect(plu_add_vec2(ptWindow->tPos, 
             (plVec2){ptWindow->tSize.x - gptCtx->tStyle.fScrollbarSize - 2.0f, fTopPadding}),
             (plVec2){gptCtx->tStyle.fScrollbarSize, ptWindow->tSize.y - fBottomPadding});
 
-        if(pl_rect_overlaps_rect(&tParentBgRect, &tScrollBackground))
+        if(plu_rect_overlaps_rect(&tParentBgRect, &tScrollBackground))
         {    
 
             const plVec2 tFinalSize = {gptCtx->tStyle.fScrollbarSize, fScrollbarHandleSize};
-            plRect tHandleBox = pl_calculate_rect(tStartPos, tFinalSize);
-            tScrollBackground = pl_rect_clip(&tScrollBackground, &ptWindow->tOuterRectClipped);
-            tHandleBox = pl_rect_clip(&tHandleBox, &ptWindow->tOuterRectClipped);
+            plRect tHandleBox = plu_calculate_rect(tStartPos, tFinalSize);
+            tScrollBackground = plu_rect_clip(&tScrollBackground, &ptWindow->tOuterRectClipped);
+            tHandleBox = plu_rect_clip(&tHandleBox, &ptWindow->tOuterRectClipped);
 
             // scrollbar background
             pl_add_rect_filled(ptWindow->ptBgLayer, tScrollBackground.tMin, tScrollBackground.tMax, gptCtx->tColorScheme.tScrollbarBgCol);
@@ -2289,8 +2289,8 @@ pl_advance_cursor(float fWidth, float fHeight)
 
     ptCurrentRow->uCurrentColumn++;
     
-    ptCurrentRow->fMaxWidth = pl_maxf(ptCurrentRow->fHorizontalOffset + fWidth, ptCurrentRow->fMaxWidth);
-    ptCurrentRow->fMaxHeight = pl_maxf(ptCurrentRow->fMaxHeight, ptCurrentRow->fVerticalOffset + fHeight);
+    ptCurrentRow->fMaxWidth = plu_maxf(ptCurrentRow->fHorizontalOffset + fWidth, ptCurrentRow->fMaxWidth);
+    ptCurrentRow->fMaxHeight = plu_maxf(ptCurrentRow->fMaxHeight, ptCurrentRow->fVerticalOffset + fHeight);
 
     // not yet at end of row
     if(ptCurrentRow->uCurrentColumn < ptCurrentRow->uColumns)
@@ -2301,8 +2301,8 @@ pl_advance_cursor(float fWidth, float fHeight)
     {
         ptWindow->tTempData.tRowPos.y = ptWindow->tTempData.tRowPos.y + ptCurrentRow->fMaxHeight + gptCtx->tStyle.tItemSpacing.y;
 
-        gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.x = pl_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.x);
-        gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.y = pl_maxf(ptWindow->tTempData.tRowPos.y, gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.y);   
+        gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.x = plu_maxf(ptWindow->tTempData.tRowPos.x + ptCurrentRow->fMaxWidth, gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.x);
+        gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.y = plu_maxf(ptWindow->tTempData.tRowPos.y, gptCtx->ptCurrentWindow->tTempData.tCursorMaxPos.y);   
 
         // reset
         ptCurrentRow->uCurrentColumn = 0;
@@ -2315,7 +2315,7 @@ pl_advance_cursor(float fWidth, float fHeight)
     // passed end of row
     if(ptCurrentRow->uCurrentColumn > ptCurrentRow->uColumns && ptCurrentRow->tSystemType == PL_UI_LAYOUT_SYSTEM_TYPE_ROW_XXX)
     {
-        PL_ASSERT(false);
+        PL_UI_ASSERT(false);
     }
 }
 
@@ -2337,7 +2337,7 @@ pl_submit_window(plUiWindow* ptWindow)
 
     // add padding for resizing from borders
     if(!(ptWindow->tFlags & (PL_UI_WINDOW_FLAGS_NO_RESIZE | PL_UI_WINDOW_FLAGS_AUTO_SIZE)))
-        tBoundBox = pl_rect_expand(&tBoundBox, 2.0f);
+        tBoundBox = plu_rect_expand(&tBoundBox, 2.0f);
 
     // check if window is hovered
     if(pl_is_mouse_hovering_rect(tBoundBox.tMin, tBoundBox.tMax))
@@ -2364,8 +2364,8 @@ pl_submit_window(plUiWindow* ptWindow)
             gptCtx->ptWheelingWindow = ptWindow;
     }
 
-    pl_sb_push(gptCtx->sbptWindows, ptWindow);
-    for(uint32_t j = 0; j < pl_sb_size(ptWindow->sbtChildWindows); j++)
+    plu_sb_push(gptCtx->sbptWindows, ptWindow);
+    for(uint32_t j = 0; j < plu_sb_size(ptWindow->sbtChildWindows); j++)
         pl_submit_window(ptWindow->sbtChildWindows[j]);
 }
 
@@ -2419,8 +2419,8 @@ pl__update_events(void)
 
             case PL_INPUT_EVENT_TYPE_TEXT:
             {
-                plWChar uChar = (plWChar)ptEvent->uChar;
-                pl_sb_push(gptCtx->tIO._sbInputQueueCharacters, uChar);
+                plUiWChar uChar = (plUiWChar)ptEvent->uChar;
+                plu_sb_push(gptCtx->tIO._sbInputQueueCharacters, uChar);
                 break;
             }
 
@@ -2469,7 +2469,7 @@ pl__update_mouse_inputs(void)
     }
 
     if(pl_is_mouse_pos_valid(gptCtx->tIO._tMousePos) && pl_is_mouse_pos_valid(gptCtx->tIO._tMousePosPrev))
-        gptCtx->tIO._tMouseDelta = PL_IO_VEC2_SUBTRACT(gptCtx->tIO._tMousePos, gptCtx->tIO._tMousePosPrev);
+        gptCtx->tIO._tMouseDelta = plu_sub_vec2(gptCtx->tIO._tMousePos, gptCtx->tIO._tMousePosPrev);
     else
     {
         gptCtx->tIO._tMouseDelta.x = 0.0f;
@@ -2492,11 +2492,11 @@ pl__update_mouse_inputs(void)
             bool bIsRepeatedClick = false;
             if((float)(gptCtx->tIO.dTime - gptCtx->tIO._adMouseClickedTime[i]) < gptCtx->tIO.fMouseDoubleClickTime)
             {
-                plVec2 tDeltaFromClickPos = PL_IO_VEC2(0.0f, 0.0f);
+                plVec2 tDeltaFromClickPos = plu_create_vec2(0.0f, 0.0f);
                 if(pl_is_mouse_pos_valid(gptCtx->tIO._tMousePos))
-                    tDeltaFromClickPos = PL_IO_VEC2_SUBTRACT(gptCtx->tIO._tMousePos, gptCtx->tIO._atMouseClickedPos[i]);
+                    tDeltaFromClickPos = plu_sub_vec2(gptCtx->tIO._tMousePos, gptCtx->tIO._atMouseClickedPos[i]);
 
-                if(PL_IO_VEC2_LENGTH_SQR(tDeltaFromClickPos) < gptCtx->tIO.fMouseDoubleClickMaxDist * gptCtx->tIO.fMouseDoubleClickMaxDist)
+                if(PLU_VEC2_LENGTH_SQR(tDeltaFromClickPos) < gptCtx->tIO.fMouseDoubleClickMaxDist * gptCtx->tIO.fMouseDoubleClickMaxDist)
                     bIsRepeatedClick = true;
             }
 
@@ -2512,9 +2512,9 @@ pl__update_mouse_inputs(void)
         }
         else if(gptCtx->tIO._abMouseDown[i])
         {
-            const plVec2 tClickPos = PL_IO_VEC2_SUBTRACT(gptCtx->tIO._tLastValidMousePos, gptCtx->tIO._atMouseClickedPos[i]);
-            float fDeltaSqrClickPos = PL_IO_VEC2_LENGTH_SQR(tClickPos);
-            gptCtx->tIO._afMouseDragMaxDistSqr[i] = PL_IO_MAX(fDeltaSqrClickPos, gptCtx->tIO._afMouseDragMaxDistSqr[i]);
+            const plVec2 tClickPos = plu_sub_vec2(gptCtx->tIO._tLastValidMousePos, gptCtx->tIO._atMouseClickedPos[i]);
+            float fDeltaSqrClickPos = PLU_VEC2_LENGTH_SQR(tClickPos);
+            gptCtx->tIO._afMouseDragMaxDistSqr[i] = plu_max(fDeltaSqrClickPos, gptCtx->tIO._afMouseDragMaxDistSqr[i]);
         }
 
 

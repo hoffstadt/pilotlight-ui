@@ -1054,7 +1054,7 @@ create_swapchain(plGraphics* ptGraphics, uint32_t uWidth, uint32_t uHeight, plVu
     uint32_t uFormatCount = 0u;
     PL_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(ptDevice->tPhysicalDevice, ptGraphics->tSurface, &uFormatCount, NULL));
     
-    pl_sb_resize(ptSwapchainOut->sbtSurfaceFormats, uFormatCount);
+    plu_sb_resize(ptSwapchainOut->sbtSurfaceFormats, uFormatCount);
 
     VkBool32 tPresentSupport = false;
     PL_VULKAN(vkGetPhysicalDeviceSurfaceSupportKHR(ptDevice->tPhysicalDevice, 0, ptGraphics->tSurface, &tPresentSupport));
@@ -1120,8 +1120,8 @@ create_swapchain(plGraphics* ptGraphics, uint32_t uWidth, uint32_t uHeight, plVu
         tExtent = tCapabilities.currentExtent;
     else
     {
-        tExtent.width = pl_max(tCapabilities.minImageExtent.width, pl_min(tCapabilities.maxImageExtent.width, uWidth));
-        tExtent.height = pl_max(tCapabilities.minImageExtent.height, pl_min(tCapabilities.maxImageExtent.height, uHeight));
+        tExtent.width = plu_max(tCapabilities.minImageExtent.width, plu_min(tCapabilities.maxImageExtent.width, uWidth));
+        tExtent.height = plu_max(tCapabilities.minImageExtent.height, plu_min(tCapabilities.maxImageExtent.height, uHeight));
     }
     ptSwapchainOut->tExtent = tExtent;
 
@@ -1202,14 +1202,14 @@ create_swapchain(plGraphics* ptGraphics, uint32_t uWidth, uint32_t uHeight, plVu
 
     if(tOldSwapChain)
     {
-        if(pl_sb_size(ptDevice->_sbtFrameGarbage) == 0)
+        if(plu_sb_size(ptDevice->_sbtFrameGarbage) == 0)
         {
-            pl_sb_resize(ptDevice->_sbtFrameGarbage, ptSwapchainOut->uImageCount);
+            plu_sb_resize(ptDevice->_sbtFrameGarbage, ptSwapchainOut->uImageCount);
         }
         for (uint32_t i = 0u; i < uOldImageCount; i++)
         {
-            pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->sbtImageViews[i]);
-            pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtFrameBuffers, ptSwapchainOut->sbtFrameBuffers[i]);
+            plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->sbtImageViews[i]);
+            plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtFrameBuffers, ptSwapchainOut->sbtFrameBuffers[i]);
         }
         vkDestroySwapchainKHR(ptDevice->tLogicalDevice, tOldSwapChain, NULL);
     }
@@ -1217,8 +1217,8 @@ create_swapchain(plGraphics* ptGraphics, uint32_t uWidth, uint32_t uHeight, plVu
     // get swapchain images
 
     PL_VULKAN(vkGetSwapchainImagesKHR(ptDevice->tLogicalDevice, ptSwapchainOut->tSwapChain, &ptSwapchainOut->uImageCount, NULL));
-    pl_sb_resize(ptSwapchainOut->sbtImages, ptSwapchainOut->uImageCount);
-    pl_sb_resize(ptSwapchainOut->sbtImageViews, ptSwapchainOut->uImageCount);
+    plu_sb_resize(ptSwapchainOut->sbtImages, ptSwapchainOut->uImageCount);
+    plu_sb_resize(ptSwapchainOut->sbtImageViews, ptSwapchainOut->uImageCount);
 
     PL_VULKAN(vkGetSwapchainImagesKHR(ptDevice->tLogicalDevice, ptSwapchainOut->tSwapChain, &ptSwapchainOut->uImageCount, ptSwapchainOut->sbtImages));
 
@@ -1251,12 +1251,12 @@ create_swapchain(plGraphics* ptGraphics, uint32_t uWidth, uint32_t uHeight, plVu
     }  //-V1020
 
     // color & depth
-    if(ptSwapchainOut->tColorTextureView)  pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->tColorTextureView);
-    if(ptSwapchainOut->tDepthTextureView)  pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->tDepthTextureView);
-    if(ptSwapchainOut->tColorTexture)      pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextures, ptSwapchainOut->tColorTexture);
-    if(ptSwapchainOut->tDepthTexture)      pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextures, ptSwapchainOut->tDepthTexture);
-    if(ptSwapchainOut->tColorTextureMemory)      pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtMemory, ptSwapchainOut->tColorTextureMemory);
-    if(ptSwapchainOut->tDepthTextureMemory)      pl_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtMemory, ptSwapchainOut->tDepthTextureMemory);
+    if(ptSwapchainOut->tColorTextureView)  plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->tColorTextureView);
+    if(ptSwapchainOut->tDepthTextureView)  plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextureViews, ptSwapchainOut->tDepthTextureView);
+    if(ptSwapchainOut->tColorTexture)      plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextures, ptSwapchainOut->tColorTexture);
+    if(ptSwapchainOut->tDepthTexture)      plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtTextures, ptSwapchainOut->tDepthTexture);
+    if(ptSwapchainOut->tColorTextureMemory)      plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtMemory, ptSwapchainOut->tColorTextureMemory);
+    if(ptSwapchainOut->tDepthTextureMemory)      plu_sb_push(ptDevice->_sbtFrameGarbage[ptDevice->uCurrentFrame].sbtMemory, ptSwapchainOut->tDepthTextureMemory);
 
     ptSwapchainOut->tColorTextureView = VK_NULL_HANDLE;
     ptSwapchainOut->tColorTexture     = VK_NULL_HANDLE;
@@ -1441,14 +1441,14 @@ setup_vulkan(plGraphics* ptGraphics)
     static const char* pcKhronosValidationLayer = "VK_LAYER_KHRONOS_validation";
 
     const char** sbpcEnabledExtensions = NULL;
-    pl_sb_push(sbpcEnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME);
-    pl_sb_push(sbpcEnabledExtensions, VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+    plu_sb_push(sbpcEnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME);
+    plu_sb_push(sbpcEnabledExtensions, VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 
 
     if(bEnableValidation)
     {
-        pl_sb_push(sbpcEnabledExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        pl_sb_push(sbpcEnabledExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        plu_sb_push(sbpcEnabledExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        plu_sb_push(sbpcEnabledExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     }
 
     // retrieve supported layers
@@ -1473,7 +1473,7 @@ setup_vulkan(plGraphics* ptGraphics)
 
     // ensure extensions are supported
     const char** sbpcMissingExtensions = NULL;
-    for(uint32_t i = 0; i < pl_sb_size(sbpcEnabledExtensions); i++)
+    for(uint32_t i = 0; i < plu_sb_size(sbpcEnabledExtensions); i++)
     {
         const char* requestedExtension = sbpcEnabledExtensions[i];
         bool extensionFound = false;
@@ -1489,15 +1489,15 @@ setup_vulkan(plGraphics* ptGraphics)
 
         if(!extensionFound)
         {
-            pl_sb_push(sbpcMissingExtensions, requestedExtension);
+            plu_sb_push(sbpcMissingExtensions, requestedExtension);
         }
     }
 
     // report if all requested extensions aren't found
-    if(pl_sb_size(sbpcMissingExtensions) > 0)
+    if(plu_sb_size(sbpcMissingExtensions) > 0)
     {
-        // //pl_log_error_to_f(uLogChannel, "%d %s", pl_sb_size(sbpcMissingExtensions), "Missing Extensions:");
-        for(uint32_t i = 0; i < pl_sb_size(sbpcMissingExtensions); i++)
+        // //pl_log_error_to_f(uLogChannel, "%d %s", plu_sb_size(sbpcMissingExtensions), "Missing Extensions:");
+        for(uint32_t i = 0; i < plu_sb_size(sbpcMissingExtensions); i++)
         {
             //pl_log_error_to_f(uLogChannel, "  * %s", sbpcMissingExtensions[i]);
         }
@@ -1523,15 +1523,15 @@ setup_vulkan(plGraphics* ptGraphics)
 
         if(!bLayerFound)
         {
-            pl_sb_push(sbpcMissingLayers, pcRequestedLayer);
+            plu_sb_push(sbpcMissingLayers, pcRequestedLayer);
         }
     }
 
     // report if all requested layers aren't found
-    if(pl_sb_size(sbpcMissingLayers) > 0)
+    if(plu_sb_size(sbpcMissingLayers) > 0)
     {
-        //pl_log_error_to_f(uLogChannel, "%d %s", pl_sb_size(sbpcMissingLayers), "Missing Layers:");
-        for(uint32_t i = 0; i < pl_sb_size(sbpcMissingLayers); i++)
+        //pl_log_error_to_f(uLogChannel, "%d %s", plu_sb_size(sbpcMissingLayers), "Missing Layers:");
+        for(uint32_t i = 0; i < plu_sb_size(sbpcMissingLayers); i++)
         {
             //pl_log_error_to_f(uLogChannel, "  * %s", sbpcMissingLayers[i]);
         }
@@ -1557,7 +1557,7 @@ setup_vulkan(plGraphics* ptGraphics)
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo        = &tAppInfo,
         .pNext                   = bEnableValidation ? (VkDebugUtilsMessengerCreateInfoEXT*)&tDebugCreateInfo : VK_NULL_HANDLE,
-        .enabledExtensionCount   = pl_sb_size(sbpcEnabledExtensions),
+        .enabledExtensionCount   = plu_sb_size(sbpcEnabledExtensions),
         .ppEnabledExtensionNames = sbpcEnabledExtensions,
         .enabledLayerCount       = 1,
         .ppEnabledLayerNames     = &pcKhronosValidationLayer,
@@ -1573,8 +1573,8 @@ setup_vulkan(plGraphics* ptGraphics)
     // cleanup
     if(ptAvailableLayers)     free(ptAvailableLayers);
     if(ptAvailableExtensions) free(ptAvailableExtensions);
-    pl_sb_free(sbpcMissingLayers);
-    pl_sb_free(sbpcMissingExtensions);
+    plu_sb_free(sbpcMissingLayers);
+    plu_sb_free(sbpcMissingExtensions);
 
     if(bEnableValidation)
     {
@@ -1584,7 +1584,7 @@ setup_vulkan(plGraphics* ptGraphics)
         //pl_log_trace_to_f(uLogChannel, "enabled Vulkan validation layers");
     }
 
-    pl_sb_free(sbpcEnabledExtensions);
+    plu_sb_free(sbpcEnabledExtensions);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~create surface~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1717,9 +1717,9 @@ setup_vulkan(plGraphics* ptGraphics)
     static const char* pcValidationLayers = "VK_LAYER_KHRONOS_validation";
 
     const char** sbpcDeviceExts = NULL;
-    if(ptDevice->bSwapchainExtPresent)      pl_sb_push(sbpcDeviceExts, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    if(ptDevice->bPortabilitySubsetPresent) pl_sb_push(sbpcDeviceExts, "VK_KHR_portability_subset");
-    pl_sb_push(sbpcDeviceExts, VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+    if(ptDevice->bSwapchainExtPresent)      plu_sb_push(sbpcDeviceExts, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    if(ptDevice->bPortabilitySubsetPresent) plu_sb_push(sbpcDeviceExts, "VK_KHR_portability_subset");
+    plu_sb_push(sbpcDeviceExts, VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
     VkDeviceCreateInfo tCreateDeviceInfo = {
         .sType                    = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount     = atQueueCreateInfos[0].queueFamilyIndex == atQueueCreateInfos[1].queueFamilyIndex ? 1 : 2,
@@ -1728,11 +1728,11 @@ setup_vulkan(plGraphics* ptGraphics)
         .ppEnabledExtensionNames  = sbpcDeviceExts,
         .enabledLayerCount        = bEnableValidation ? 1 : 0,
         .ppEnabledLayerNames      = bEnableValidation ? &pcValidationLayers : NULL,
-        .enabledExtensionCount    = pl_sb_size(sbpcDeviceExts)
+        .enabledExtensionCount    = plu_sb_size(sbpcDeviceExts)
     };
     PL_VULKAN(vkCreateDevice(ptDevice->tPhysicalDevice, &tCreateDeviceInfo, NULL, &ptDevice->tLogicalDevice));
 
-    pl_sb_free(sbpcDeviceExts);
+    plu_sb_free(sbpcDeviceExts);
 
     // get device queues
     vkGetDeviceQueue(ptDevice->tLogicalDevice, ptDevice->iGraphicsQueueFamily, 0, &ptDevice->tGraphicsQueue);
@@ -1863,7 +1863,7 @@ setup_vulkan(plGraphics* ptGraphics)
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~frame buffer~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
-    pl_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
+    plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
     for(uint32_t i = 0; i < ptGraphics->tSwapchain.uImageCount; i++)
     {
         ptGraphics->tSwapchain.sbtFrameBuffers[i] = VK_NULL_HANDLE;
@@ -1903,7 +1903,7 @@ setup_vulkan(plGraphics* ptGraphics)
         .flags = VK_FENCE_CREATE_SIGNALED_BIT
     };
 
-    pl_sb_resize(ptGraphics->sbFrames, ptGraphics->uFramesInFlight);
+    plu_sb_resize(ptGraphics->sbFrames, ptGraphics->uFramesInFlight);
     for(uint32_t i = 0; i < ptGraphics->uFramesInFlight; i++)
     {
         plFrameContext tFrame = {0};
@@ -1963,22 +1963,22 @@ begin_frame(plGraphics* ptGraphics)
 
     if(ptGarbage)
     {
-        for(uint32_t i = 0; i < pl_sb_size(ptGarbage->sbtTextures); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptGarbage->sbtTextures); i++)
             vkDestroyImage(ptDevice->tLogicalDevice, ptGarbage->sbtTextures[i], NULL);
 
-        for(uint32_t i = 0; i < pl_sb_size(ptGarbage->sbtTextureViews); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptGarbage->sbtTextureViews); i++)
             vkDestroyImageView(ptDevice->tLogicalDevice, ptGarbage->sbtTextureViews[i], NULL);
 
-        for(uint32_t i = 0; i < pl_sb_size(ptGarbage->sbtFrameBuffers); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptGarbage->sbtFrameBuffers); i++)
             vkDestroyFramebuffer(ptDevice->tLogicalDevice, ptGarbage->sbtFrameBuffers[i], NULL);
 
-        for(uint32_t i = 0; i < pl_sb_size(ptGarbage->sbtMemory); i++)
+        for(uint32_t i = 0; i < plu_sb_size(ptGarbage->sbtMemory); i++)
             vkFreeMemory(ptDevice->tLogicalDevice, ptGarbage->sbtMemory[i], NULL);
 
-        pl_sb_reset(ptGarbage->sbtTextures);
-        pl_sb_reset(ptGarbage->sbtTextureViews);
-        pl_sb_reset(ptGarbage->sbtFrameBuffers);
-        pl_sb_reset(ptGarbage->sbtMemory);
+        plu_sb_reset(ptGarbage->sbtTextures);
+        plu_sb_reset(ptGarbage->sbtTextureViews);
+        plu_sb_reset(ptGarbage->sbtFrameBuffers);
+        plu_sb_reset(ptGarbage->sbtMemory);
     }
 
     PL_VULKAN(vkWaitForFences(ptDevice->tLogicalDevice, 1, &ptCurrentFrame->tInFlight, VK_TRUE, UINT64_MAX));
@@ -1990,7 +1990,7 @@ begin_frame(plGraphics* ptGraphics)
             create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
             // recreate frame buffers
-            pl_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
+            plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
             for(uint32_t i = 0; i < ptGraphics->tSwapchain.uImageCount; i++)
             {
                 ptGraphics->tSwapchain.sbtFrameBuffers[i] = VK_NULL_HANDLE;
@@ -2068,7 +2068,7 @@ end_frame(plGraphics* ptGraphics)
         create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
         // recreate frame buffers
-        pl_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
+        plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
         for(uint32_t i = 0; i < ptGraphics->tSwapchain.uImageCount; i++)
         {
             ptGraphics->tSwapchain.sbtFrameBuffers[i] = VK_NULL_HANDLE;
@@ -2113,7 +2113,7 @@ resize(plGraphics* ptGraphics)
     create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
     // recreate frame buffers
-    pl_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
+    plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
     for(uint32_t i = 0; i < ptGraphics->tSwapchain.uImageCount; i++)
     {
         ptGraphics->tSwapchain.sbtFrameBuffers[i] = VK_NULL_HANDLE;
@@ -2149,7 +2149,7 @@ cleanup(plGraphics* ptGraphics)
     vkDeviceWaitIdle(ptDevice->tLogicalDevice);
 
     // cleanup per frame resources
-    for(uint32_t i = 0; i < pl_sb_size(ptGraphics->sbFrames); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptGraphics->sbFrames); i++)
     {
         plFrameContext* ptFrame = &ptGraphics->sbFrames[i];
         vkDestroySemaphore(ptDevice->tLogicalDevice, ptFrame->tImageAvailable, NULL);
@@ -2166,10 +2166,10 @@ cleanup(plGraphics* ptGraphics)
     vkFreeMemory(ptDevice->tLogicalDevice, ptGraphics->tSwapchain.tColorTextureMemory, NULL);
     vkFreeMemory(ptDevice->tLogicalDevice, ptGraphics->tSwapchain.tDepthTextureMemory, NULL);
 
-    for(uint32_t i = 0; i < pl_sb_size(ptGraphics->tSwapchain.sbtImageViews); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptGraphics->tSwapchain.sbtImageViews); i++)
         vkDestroyImageView(ptDevice->tLogicalDevice, ptGraphics->tSwapchain.sbtImageViews[i], NULL);
 
-    for(uint32_t i = 0; i < pl_sb_size(ptGraphics->tSwapchain.sbtFrameBuffers); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptGraphics->tSwapchain.sbtFrameBuffers); i++)
         vkDestroyFramebuffer(ptDevice->tLogicalDevice, ptGraphics->tSwapchain.sbtFrameBuffers[i], NULL);
     
     vkDestroyRenderPass(ptDevice->tLogicalDevice, ptGraphics->tRenderPass, NULL);
@@ -2195,20 +2195,20 @@ cleanup(plGraphics* ptGraphics)
     // destroy tInstance
     vkDestroyInstance(ptGraphics->tInstance, NULL);
 
-    for(uint32_t i = 0; i < pl_sb_size(ptDevice->_sbtFrameGarbage); i++)
+    for(uint32_t i = 0; i < plu_sb_size(ptDevice->_sbtFrameGarbage); i++)
     {
-        pl_sb_free(ptDevice->_sbtFrameGarbage[i].sbtFrameBuffers);
-        pl_sb_free(ptDevice->_sbtFrameGarbage[i].sbtMemory);
-        pl_sb_free(ptDevice->_sbtFrameGarbage[i].sbtTextures);
-        pl_sb_free(ptDevice->_sbtFrameGarbage[i].sbtTextureViews);
+        plu_sb_free(ptDevice->_sbtFrameGarbage[i].sbtFrameBuffers);
+        plu_sb_free(ptDevice->_sbtFrameGarbage[i].sbtMemory);
+        plu_sb_free(ptDevice->_sbtFrameGarbage[i].sbtTextures);
+        plu_sb_free(ptDevice->_sbtFrameGarbage[i].sbtTextureViews);
     }
 
-    pl_sb_free(ptDevice->_sbtFrameGarbage);
-    pl_sb_free(ptGraphics->sbFrames);
-    pl_sb_free(ptGraphics->tSwapchain.sbtSurfaceFormats);
-    pl_sb_free(ptGraphics->tSwapchain.sbtImages);
-    pl_sb_free(ptGraphics->tSwapchain.sbtFrameBuffers);
-    pl_sb_free(ptGraphics->tSwapchain.sbtImageViews);
+    plu_sb_free(ptDevice->_sbtFrameGarbage);
+    plu_sb_free(ptGraphics->sbFrames);
+    plu_sb_free(ptGraphics->tSwapchain.sbtSurfaceFormats);
+    plu_sb_free(ptGraphics->tSwapchain.sbtImages);
+    plu_sb_free(ptGraphics->tSwapchain.sbtFrameBuffers);
+    plu_sb_free(ptGraphics->tSwapchain.sbtImageViews);
 }
     
 

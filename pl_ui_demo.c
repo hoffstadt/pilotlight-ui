@@ -23,7 +23,7 @@ pl_debug(bool* pbOpen)
         pl_checkbox("Show Window Outer Rect", &bShowWindowOuterRect);
         pl_checkbox("Show Window Outer Rect Clipped", &bShowWindowOuterClippedRect);
 
-        for(uint32_t uWindowIndex = 0; uWindowIndex < pl_sb_size(gptCtx->sbptWindows); uWindowIndex++)
+        for(uint32_t uWindowIndex = 0; uWindowIndex < plu_sb_size(gptCtx->sbptWindows); uWindowIndex++)
         {
             const plUiWindow* ptWindow = gptCtx->sbptWindows[uWindowIndex];
 
@@ -47,7 +47,7 @@ pl_debug(bool* pbOpen)
 
         if(pl_tree_node("Windows"))
         {
-            for(uint32_t uWindowIndex = 0; uWindowIndex < pl_sb_size(gptCtx->sbptWindows); uWindowIndex++)
+            for(uint32_t uWindowIndex = 0; uWindowIndex < plu_sb_size(gptCtx->sbptWindows); uWindowIndex++)
             {
                 const plUiWindow* ptWindow = gptCtx->sbptWindows[uWindowIndex];
 
@@ -56,9 +56,9 @@ pl_debug(bool* pbOpen)
                     
                     if(pl_tree_node("Draw Layers"))
                     {
-                        if(pl_tree_node_f("Foreground %d vtx, %d indices, %d cmds", ptWindow->ptFgLayer->vertexCount, pl_sb_size(ptWindow->ptFgLayer->sbIndexBuffer), pl_sb_size(ptWindow->ptFgLayer->sbCommandBuffer)))
+                        if(pl_tree_node_f("Foreground %d vtx, %d indices, %d cmds", ptWindow->ptFgLayer->vertexCount, plu_sb_size(ptWindow->ptFgLayer->sbIndexBuffer), plu_sb_size(ptWindow->ptFgLayer->sbCommandBuffer)))
                         {
-                            for(uint32_t i = 0; i < pl_sb_size(ptWindow->ptFgLayer->sbCommandBuffer); i++)
+                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptFgLayer->sbCommandBuffer); i++)
                             {
                                 const plDrawCommand* ptDrawCmd = &ptWindow->ptFgLayer->sbCommandBuffer[i];
                                 if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->elementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))
@@ -76,9 +76,9 @@ pl_debug(bool* pbOpen)
                             
                             pl_tree_pop(); 
                         }
-                        if(pl_tree_node_f("Background %d vtx, %d indices, %d cmds", ptWindow->ptBgLayer->vertexCount, pl_sb_size(ptWindow->ptBgLayer->sbIndexBuffer), pl_sb_size(ptWindow->ptBgLayer->sbCommandBuffer)))
+                        if(pl_tree_node_f("Background %d vtx, %d indices, %d cmds", ptWindow->ptBgLayer->vertexCount, plu_sb_size(ptWindow->ptBgLayer->sbIndexBuffer), plu_sb_size(ptWindow->ptBgLayer->sbCommandBuffer)))
                         {
-                            for(uint32_t i = 0; i < pl_sb_size(ptWindow->ptBgLayer->sbCommandBuffer); i++)
+                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptBgLayer->sbCommandBuffer); i++)
                             {
                                 const plDrawCommand* ptDrawCmd = &ptWindow->ptBgLayer->sbCommandBuffer[i];
                                 if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->elementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))

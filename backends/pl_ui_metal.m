@@ -104,7 +104,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     FramebufferDescriptor* renderPassDescriptor = [[FramebufferDescriptor alloc] initWithRenderPassDescriptor:renderPassDescriptor2];
 
     // ensure gpu vertex buffer size is adequate
-    size_t vertexBufferLength = (size_t)pl_sb_size(drawlist->sbVertexBuffer) * sizeof(plDrawVertex);
+    size_t vertexBufferLength = (size_t)plu_sb_size(drawlist->sbVertexBuffer) * sizeof(plDrawVertex);
     size_t indexBufferLength = (size_t)drawlist->indexBufferByteSize;
 
     if(indexBufferLength == 0)
@@ -113,24 +113,24 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     MetalBuffer* indexBuffer = [metalCtx dequeueReusableBufferOfLength:indexBufferLength device:metalCtx.device];
 
     // copy vertex data to gpu
-    memcpy(vertexBuffer.buffer.contents, drawlist->sbVertexBuffer, sizeof(plDrawVertex) * pl_sb_size(drawlist->sbVertexBuffer));
+    memcpy(vertexBuffer.buffer.contents, drawlist->sbVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(drawlist->sbVertexBuffer));
 
     // index GPU data transfer
     uint32_t uTempIndexBufferOffset = 0u;  
     uint32_t globalIdxBufferIndexOffset = 0u;
 
-    for(uint32_t i = 0u; i < pl_sb_size(drawlist->sbSubmittedLayers); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbSubmittedLayers); i++)
     {
         plDrawCommand* lastCommand = NULL;
         plDrawLayer* layer = drawlist->sbSubmittedLayers[i];
 
         unsigned char* destination = indexBuffer.buffer.contents;
-        memcpy(&destination[uTempIndexBufferOffset], layer->sbIndexBuffer, sizeof(uint32_t) * pl_sb_size(layer->sbIndexBuffer));
+        memcpy(&destination[uTempIndexBufferOffset], layer->sbIndexBuffer, sizeof(uint32_t) * plu_sb_size(layer->sbIndexBuffer));
 
-        uTempIndexBufferOffset += pl_sb_size(layer->sbIndexBuffer) * sizeof(uint32_t);
+        uTempIndexBufferOffset += plu_sb_size(layer->sbIndexBuffer) * sizeof(uint32_t);
 
         // attempt to merge commands
-        for(uint32_t j = 0u; j < pl_sb_size(layer->sbCommandBuffer); j++)
+        for(uint32_t j = 0u; j < plu_sb_size(layer->sbCommandBuffer); j++)
         {
             plDrawCommand *layerCommand = &layer->sbCommandBuffer[j];
             bool bCreateNewCommand = true;
@@ -155,13 +155,13 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
             if(bCreateNewCommand)
             {
                 layerCommand->indexOffset = globalIdxBufferIndexOffset + layerCommand->indexOffset;
-                pl_sb_push(drawlist->sbDrawCommands, *layerCommand);       
+                plu_sb_push(drawlist->sbDrawCommands, *layerCommand);       
                 lastCommand = layerCommand;
   
             }
             
         }    
-        globalIdxBufferIndexOffset += pl_sb_size(layer->sbIndexBuffer);    
+        globalIdxBufferIndexOffset += plu_sb_size(layer->sbIndexBuffer);    
     }
     
     // Try to retrieve a render pipeline state that is compatible with the framebuffer config for this frame
@@ -207,7 +207,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     bool sdf = false;
     const plVec2 tClipScale = ptCtx->tFrameBufferScale;
     [renderEncoder setRenderPipelineState:renderPipelineState];
-    for(uint32_t i = 0u; i < pl_sb_size(drawlist->sbDrawCommands); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbDrawCommands); i++)
     {
         plDrawCommand cmd = drawlist->sbDrawCommands[i];
 
@@ -222,7 +222,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
             sdf = false;
         }
 
-        if(pl_rect_width(&cmd.tClip) == 0)
+        if(plu_rect_width(&cmd.tClip) == 0)
         {
             MTLScissorRect tScissorRect = {
                 .x      = (NSUInteger)(0),
@@ -245,8 +245,8 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
             MTLScissorRect tScissorRect = {
                 .x      = (NSUInteger)(cmd.tClip.tMin.x < 0 ? 0 : cmd.tClip.tMin.x),
                 .y      = (NSUInteger)(cmd.tClip.tMin.y < 0 ? 0 : cmd.tClip.tMin.y),
-                .width  = (NSUInteger)pl_rect_width(&cmd.tClip),
-                .height = (NSUInteger)pl_rect_height(&cmd.tClip)
+                .width  = (NSUInteger)plu_rect_width(&cmd.tClip),
+                .height = (NSUInteger)plu_rect_height(&cmd.tClip)
             };
             [renderEncoder setScissorRect:tScissorRect];
         }

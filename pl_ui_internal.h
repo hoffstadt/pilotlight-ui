@@ -47,35 +47,35 @@ Index of this file:
 // [SECTION] helper macros
 //-----------------------------------------------------------------------------
 
-#define pl_sprintf sprintf
-#define pl_vsprintf vsprintf
-#define pl_vnsprintf vsnprintf
+#define plu_sprintf sprintf
+#define plu_vsprintf vsprintf
+#define plu_vnsprintf vsnprintf
 
-#if defined(PL_ALLOC) && defined(PL_FREE) && defined(PL_ALLOC_INDIRECT)
+#if defined(PL_UI_ALLOC) && defined(PL_UI_FREE) && defined(PL_UI_ALLOC_INDIRECT)
 // ok
-#elif !defined(PL_ALLOC) && !defined(PL_FREE) && !defined(PL_ALLOC_INDIRECT)
+#elif !defined(PL_UI_ALLOC) && !defined(PL_UI_FREE) && !defined(PL_UI_ALLOC_INDIRECT)
 // ok
 #else
-#error "Must define all or none of PL_ALLOC and PL_FREE and PL_ALLOC_INDIRECT"
+#error "Must define all or none of PL_UI_ALLOC and PL_UI_FREE and PL_UI_ALLOC_INDIRECT"
 #endif
 
-#ifndef PL_ALLOC
+#ifndef PL_UI_ALLOC
     #include <stdlib.h>
-    #define PL_ALLOC(x) malloc((x))
-    #define PL_ALLOC_INDIRECT(x, FILE, LINE) malloc((x))
-    #define PL_FREE(x)  free((x))
+    #define PL_UI_ALLOC(x) malloc((x))
+    #define PL_UI_ALLOC_INDIRECT(x, FILE, LINE) malloc((x))
+    #define PL_UI_FREE(x)  free((x))
 #endif
 
-#ifndef PL_ASSERT
+#ifndef PL_UI_ASSERT
     #include <assert.h>
-    #define PL_ASSERT(x) assert((x))
+    #define PL_UI_ASSERT(x) assert((x))
 #endif
 
 // stb
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
-#define STB_TEXTEDIT_STRING           plInputTextState
-#define STB_TEXTEDIT_CHARTYPE         plWChar
+#define STB_TEXTEDIT_STRING           plUiInputTextState
+#define STB_TEXTEDIT_CHARTYPE         plUiWChar
 #define STB_TEXTEDIT_GETWIDTH_NEWLINE (-1.0f)
 #define STB_TEXTEDIT_UNDOSTATECOUNT   99
 #define STB_TEXTEDIT_UNDOCHARCOUNT    999
@@ -89,22 +89,8 @@ Index of this file:
 #define PL_UNICODE_CODEPOINT_INVALID 0xFFFD     // Invalid Unicode code point (standard value).
 #define PL_UNICODE_CODEPOINT_MAX     0xFFFF     // Maximum Unicode code point supported by this build.
 
-#define PL_E        2.71828182f // e
-#define PL_LOG2E    1.44269504f // log2(e)
-#define PL_LOG10E   0.43429448f // log10(e)
-#define PL_LN2      0.69314718f // ln(2)
-#define PL_LN10     2.30258509f // ln(10)
-#define PL_PI       3.14159265f // pi
-#define PL_2PI      6.28318530f // pi
-#define PL_PI_2     1.57079632f // pi/2
-#define PL_PI_3     1.04719755f // pi/3
-#define PL_PI_4     0.78539816f // pi/4
-#define PL_1_PI     0.31830988f // 1/pi
-#define PL_2_PI     0.63661977f // 2/pi
-#define PL_2_SQRTPI 1.12837916f // 2/sqrt(pi)
-#define PL_SQRT2    1.41421356f // sqrt(2)
-#define PL_SQRT1_2  0.70710678f // 1/sqrt(2)
-#define PL_PI_D     3.1415926535897932 // pi
+#define PLU_PI_2 1.57079632f // pi/2
+#define PLU_2PI  6.28318530f // pi
 
 //-----------------------------------------------------------------------------
 // [SECTION] forward declarations
@@ -120,7 +106,7 @@ typedef struct _plUiNextWindowData plUiNextWindowData;
 typedef struct _plUiTempWindowData plUiTempWindowData;
 typedef struct _plUiStorage        plUiStorage;
 typedef struct _plUiStorageEntry   plUiStorageEntry;
-typedef struct _plInputTextState   plInputTextState;
+typedef struct _plUiInputTextState   plUiInputTextState;
 
 // enums
 typedef int plUiNextWindowFlags;
@@ -219,89 +205,73 @@ enum plUiInputTextFlags_ // borrowed from "Dear ImGui"
 // [SECTION] math
 //-----------------------------------------------------------------------------
 
-#ifdef __cplusplus
-    #define pl_create_vec2(XARG, YARG)                  {(XARG), (YARG)}
-    #define pl_create_vec3(XARG, YARG, ZARG)            {(XARG), (YARG), (ZARG)}
-    #define pl_create_vec4(XARG, YARG, ZARG, WARG)      {(XARG), (YARG), (ZARG), (WARG)}
-    #define pl_create_mat4_diag(XARG, YARG, ZARG, WARG) {(XARG), 0.0, 0.0f, 0.0f, 0.0f, (YARG), 0.0f, 0.0f, 0.0f, 0.0f, (ZARG), 0.0f, 0.0f, 0.0f, 0.0f, (WARG)}
-    #define pl_create_mat4_cols(XARG, YARG, ZARG, WARG) {(XARG).x, (XARG).y, (XARG).z, (XARG).w, (YARG).x, (YARG).y, (YARG).z, (YARG).w, (ZARG).x, (ZARG).y, (ZARG).z, (ZARG).w, (WARG).x, (WARG).y, (WARG).z, (WARG).w}
-    #define pl_create_rect_vec2(XARG, YARG)             {(XARG), (YARG)}
-    #define pl_create_rect(XARG, YARG, ZARG, WARG)      {{(XARG), (YARG)}, {(ZARG), (WARG)}}
-#else
-    #define pl_create_vec2(XARG, YARG)                  (plVec2){(XARG), (YARG)}
-    #define pl_create_vec3(XARG, YARG, ZARG)            (plVec3){(XARG), (YARG), (ZARG)}
-    #define pl_create_vec4(XARG, YARG, ZARG, WARG)      (plVec4){(XARG), (YARG), (ZARG), (WARG)}
-    #define pl_create_mat4_diag(XARG, YARG, ZARG, WARG) (plMat4){.x11 = (XARG), .x22 = (YARG), .x33 = (ZARG), .x44 = (WARG)}
-    #define pl_create_mat4_cols(XARG, YARG, ZARG, WARG) (plMat4){.col[0] = (XARG), .col[1] = (YARG), .col[2] = (ZARG), .col[3] = (WARG)}
-    #define pl_create_rect_vec2(XARG, YARG)             (plRect){.tMin = (XARG), .tMax = (YARG)}
-    #define pl_create_rect(XARG, YARG, ZARG, WARG)      (plRect){.tMin = {.x = (XARG), .y = (YARG)}, .tMax = {.x = (ZARG), .y = (WARG)}}
-#endif
+#define plu_create_vec2(XARG, YARG)                  (plVec2){(XARG), (YARG)}
+#define plu_create_vec3(XARG, YARG, ZARG)            (plVec3){(XARG), (YARG), (ZARG)}
+#define plu_create_vec4(XARG, YARG, ZARG, WARG)      (plVec4){(XARG), (YARG), (ZARG), (WARG)}
+#define plu_create_mat4_diag(XARG, YARG, ZARG, WARG) (plMat4){.x11 = (XARG), .x22 = (YARG), .x33 = (ZARG), .x44 = (WARG)}
+#define plu_create_mat4_cols(XARG, YARG, ZARG, WARG) (plMat4){.col[0] = (XARG), .col[1] = (YARG), .col[2] = (ZARG), .col[3] = (WARG)}
+#define plu_create_rect_vec2(XARG, YARG)             (plRect){.tMin = (XARG), .tMax = (YARG)}
+#define plu_create_rect(XARG, YARG, ZARG, WARG)      (plRect){.tMin = {.x = (XARG), .y = (YARG)}, .tMax = {.x = (ZARG), .y = (WARG)}}
 
-#define pl_max(Value1, Value2) ((Value1) > (Value2) ? (Value1) : (Value2))
-#define pl_min(Value1, Value2) ((Value1) > (Value2) ? (Value2) : (Value1))
+#define plu_max(Value1, Value2) ((Value1) > (Value2) ? (Value1) : (Value2))
+#define plu_min(Value1, Value2) ((Value1) > (Value2) ? (Value2) : (Value1))
 
-static inline float    pl_maxf    (float fValue1, float fValue2)            { return fValue1 > fValue2 ? fValue1 : fValue2; }
-static inline float    pl_minf    (float fValue1, float fValue2)            { return fValue1 > fValue2 ? fValue2 : fValue1; }
-static inline uint32_t pl_minu    (uint32_t uValue1, uint32_t uValue2)      { return uValue1 > uValue2 ? uValue2 : uValue1; }
-static inline int      pl_clampi  (int iMin, int iValue, int iMax)          { if (iValue < iMin) return iMin; else if (iValue > iMax) return iMax; return iValue; }
-static inline float    pl_clampf  (float fMin, float fValue, float fMax)    { if (fValue < fMin) return fMin; else if (fValue > fMax) return fMax; return fValue; }
-
-#define PL__ALIGN_UP(num, align) (((num) + ((align)-1)) & ~((align)-1))
+static inline float    plu_maxf    (float fValue1, float fValue2)            { return fValue1 > fValue2 ? fValue1 : fValue2; }
+static inline float    plu_minf    (float fValue1, float fValue2)            { return fValue1 > fValue2 ? fValue2 : fValue1; }
+static inline uint32_t plu_minu    (uint32_t uValue1, uint32_t uValue2)      { return uValue1 > uValue2 ? uValue2 : uValue1; }
+static inline int      plu_clampi  (int iMin, int iValue, int iMax)          { if (iValue < iMin) return iMin; else if (iValue > iMax) return iMax; return iValue; }
+static inline float    plu_clampf  (float fMin, float fValue, float fMax)    { if (fValue < fMin) return fMin; else if (fValue > fMax) return fMax; return fValue; }
 
 // unary ops
-static inline plVec2 pl_floor_vec2       (plVec2 tVec)                             { return pl_create_vec2(floorf(tVec.x), floorf(tVec.y));}
-static inline plVec2 pl_clamp_vec2       (plVec2 tMin, plVec2 tValue, plVec2 tMax) { return pl_create_vec2(pl_clampf(tMin.x, tValue.x, tMax.x), pl_clampf(tMin.y, tValue.y, tMax.y));}
-static inline plVec2 pl_min_vec2        (plVec2 tValue0, plVec2 tValue1)           { return pl_create_vec2(pl_minf(tValue0.x, tValue1.x), pl_minf(tValue0.y, tValue1.y));}
-static inline plVec2 pl_max_vec2        (plVec2 tValue0, plVec2 tValue1)           { return pl_create_vec2(pl_maxf(tValue0.x, tValue1.x), pl_maxf(tValue0.y, tValue1.y));}
+static inline plVec2 plu_floor_vec2       (plVec2 tVec)                             { return plu_create_vec2(floorf(tVec.x), floorf(tVec.y));}
+static inline plVec2 plu_clamp_vec2       (plVec2 tMin, plVec2 tValue, plVec2 tMax) { return plu_create_vec2(plu_clampf(tMin.x, tValue.x, tMax.x), plu_clampf(tMin.y, tValue.y, tMax.y));}
+static inline plVec2 plu_min_vec2        (plVec2 tValue0, plVec2 tValue1)           { return plu_create_vec2(plu_minf(tValue0.x, tValue1.x), plu_minf(tValue0.y, tValue1.y));}
+static inline plVec2 plu_max_vec2        (plVec2 tValue0, plVec2 tValue1)           { return plu_create_vec2(plu_maxf(tValue0.x, tValue1.x), plu_maxf(tValue0.y, tValue1.y));}
 
 // binary ops
-static inline plVec2 pl_add_vec2        (plVec2 tVec1, plVec2 tVec2) { return pl_create_vec2(tVec1.x + tVec2.x, tVec1.y + tVec2.y); }
-static inline plVec2 pl_sub_vec2        (plVec2 tVec1, plVec2 tVec2) { return pl_create_vec2(tVec1.x - tVec2.x, tVec1.y - tVec2.y); }
-static inline plVec2 pl_mul_vec2        (plVec2 tVec1, plVec2 tVec2) { return pl_create_vec2(tVec1.x * tVec2.x, tVec1.y * tVec2.y); }
-static inline plVec2 pl_mul_vec2_scalarf(plVec2 tVec, float fValue)  { return pl_create_vec2(fValue * tVec.x, fValue * tVec.y); }
+static inline plVec2 plu_add_vec2        (plVec2 tVec1, plVec2 tVec2) { return plu_create_vec2(tVec1.x + tVec2.x, tVec1.y + tVec2.y); }
+static inline plVec2 plu_sub_vec2        (plVec2 tVec1, plVec2 tVec2) { return plu_create_vec2(tVec1.x - tVec2.x, tVec1.y - tVec2.y); }
+static inline plVec2 plu_mul_vec2        (plVec2 tVec1, plVec2 tVec2) { return plu_create_vec2(tVec1.x * tVec2.x, tVec1.y * tVec2.y); }
+static inline plVec2 plu_mul_vec2_scalarf(plVec2 tVec, float fValue)  { return plu_create_vec2(fValue * tVec.x, fValue * tVec.y); }
 
 // rect ops
-static inline plRect pl_calculate_rect     (plVec2 tStart, plVec2 tSize)                      { return pl_create_rect_vec2(tStart, pl_add_vec2(tStart, tSize));}
-static inline float  pl_rect_width         (const plRect* ptRect)                             { return ptRect->tMax.x - ptRect->tMin.x;}
-static inline float  pl_rect_height        (const plRect* ptRect)                             { return ptRect->tMax.y - ptRect->tMin.y;}
-static inline plVec2 pl_rect_size          (const plRect* ptRect)                             { return pl_sub_vec2(ptRect->tMax, ptRect->tMin);}
-static inline plVec2 pl_rect_center        (const plRect* ptRect)                             { return pl_create_vec2((ptRect->tMax.x + ptRect->tMin.x) * 0.5f, (ptRect->tMax.y + ptRect->tMin.y) * 0.5f);}
-static inline plVec2 pl_rect_top_left      (const plRect* ptRect)                             { return ptRect->tMin;}
-static inline plVec2 pl_rect_top_right     (const plRect* ptRect)                             { return pl_create_vec2(ptRect->tMax.x, ptRect->tMin.y);}
-static inline plVec2 pl_rect_bottom_left   (const plRect* ptRect)                             { return pl_create_vec2(ptRect->tMin.x, ptRect->tMax.y);}
-static inline plVec2 pl_rect_bottom_right  (const plRect* ptRect)                             { return ptRect->tMax;}
-static inline bool   pl_rect_contains_point(const plRect* ptRect, plVec2 tP)                  { return tP.x >= ptRect->tMin.x && tP.y >= ptRect->tMin.y && tP.x < ptRect->tMax.x && tP.y < ptRect->tMax.y; }
-static inline bool   pl_rect_contains_rect (const plRect* ptRect0, const plRect* ptRect1)     { return ptRect1->tMin.x >= ptRect0->tMin.x && ptRect1->tMin.y >= ptRect0->tMin.y && ptRect1->tMax.x <= ptRect0->tMax.x && ptRect1->tMax.y <= ptRect0->tMax.y; }
-static inline bool   pl_rect_overlaps_rect (const plRect* ptRect0, const plRect* ptRect1)     { return ptRect1->tMin.y <  ptRect0->tMax.y && ptRect1->tMax.y >  ptRect0->tMin.y && ptRect1->tMin.x <  ptRect0->tMax.x && ptRect1->tMax.x > ptRect0->tMin.x; }
-static inline bool   pl_rect_is_inverted   (const plRect* ptRect)                             { return ptRect->tMin.x > ptRect->tMax.x || ptRect->tMin.y > ptRect->tMax.y; }
-static inline plRect pl_rect_expand        (const plRect* ptRect, float fPadding)             { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x - fPadding, ptRect->tMin.y - fPadding); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x + fPadding, ptRect->tMax.y + fPadding); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_expand_vec2   (const plRect* ptRect, plVec2 tPadding)            { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x - tPadding.x, ptRect->tMin.y - tPadding.y); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x + tPadding.x, ptRect->tMax.y + tPadding.y); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_clip          (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = pl_create_vec2(pl_maxf(ptRect0->tMin.x, ptRect1->tMin.x), pl_maxf(ptRect0->tMin.y, ptRect1->tMin.y)); const plVec2 tMax = pl_create_vec2(pl_minf(ptRect0->tMax.x, ptRect1->tMax.x), pl_minf(ptRect0->tMax.y, ptRect1->tMax.y)); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_clip_full     (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = pl_clamp_vec2(ptRect1->tMin, ptRect0->tMin, ptRect1->tMax); const plVec2 tMax = pl_clamp_vec2(ptRect1->tMin, ptRect0->tMax, ptRect1->tMax); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_floor         (const plRect* ptRect)                             { const plVec2 tMin = pl_create_vec2( floorf(ptRect->tMin.x), floorf(ptRect->tMin.y)); const plVec2 tMax = pl_create_vec2(floorf(ptRect->tMax.x), floorf(ptRect->tMax.y)); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_translate_vec2(const plRect* ptRect, plVec2 tDelta)              { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x + tDelta.x, ptRect->tMin.y + tDelta.y); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x + tDelta.x, ptRect->tMax.y + tDelta.y); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_translate_x   (const plRect* ptRect, float fDx)                  { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x + fDx, ptRect->tMin.y); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x + fDx, ptRect->tMax.y); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_translate_y   (const plRect* ptRect, float fDy)                  { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x, ptRect->tMin.y + fDy); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x, ptRect->tMax.y + fDy); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_add_point     (const plRect* ptRect, plVec2 tP)                  { const plVec2 tMin = pl_create_vec2(ptRect->tMin.x > tP.x ? tP.x : ptRect->tMin.x, ptRect->tMin.y > tP.y ? tP.y : ptRect->tMin.y); const plVec2 tMax = pl_create_vec2(ptRect->tMax.x < tP.x ? tP.x : ptRect->tMax.x, ptRect->tMax.y < tP.y ? tP.y : ptRect->tMax.y); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_add_rect      (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = pl_create_vec2(ptRect0->tMin.x > ptRect1->tMin.x ? ptRect1->tMin.x : ptRect0->tMin.x, ptRect0->tMin.y > ptRect1->tMin.y ? ptRect1->tMin.y : ptRect0->tMin.y); const plVec2 tMax = pl_create_vec2(ptRect0->tMax.x < ptRect1->tMax.x ? ptRect1->tMax.x : ptRect0->tMax.x, ptRect0->tMax.y < ptRect1->tMax.y ? ptRect1->tMax.y : ptRect0->tMax.y); return pl_create_rect_vec2(tMin, tMax);}
-static inline plRect pl_rect_move_center   (const plRect* ptRect, float fX, float fY)         { const plVec2 tCurrentCenter = pl_rect_center(ptRect); const float fDx = fX - tCurrentCenter.x; const float fDy = fY - tCurrentCenter.y; const plRect tResult = {{ ptRect->tMin.x + fDx, ptRect->tMin.y + fDy},{ ptRect->tMax.x + fDx, ptRect->tMax.y + fDy}}; return tResult;}
-static inline plRect pl_rect_move_center_y (const plRect* ptRect, float fY)                   { const plVec2 tCurrentCenter = pl_rect_center(ptRect); const float fDy = fY - tCurrentCenter.y; const plRect tResult = {{ ptRect->tMin.x, ptRect->tMin.y + fDy},{ ptRect->tMax.x, ptRect->tMax.y + fDy}}; return tResult;}
-static inline plRect pl_rect_move_center_x (const plRect* ptRect, float fX)                   { const plVec2 tCurrentCenter = pl_rect_center(ptRect); const float fDx = fX - tCurrentCenter.x; const plRect tResult = { { ptRect->tMin.x + fDx, ptRect->tMin.y}, { ptRect->tMax.x + fDx, ptRect->tMax.y} }; return tResult;}
-static inline plRect pl_rect_move_start    (const plRect* ptRect, float fX, float fY)         { const plRect tResult = {{ fX, fY}, { fX + ptRect->tMax.x - ptRect->tMin.x, fY + ptRect->tMax.y - ptRect->tMin.y} }; return tResult;}
-static inline plRect pl_rect_move_start_x  (const plRect* ptRect, float fX)                   { const plRect tResult = { { fX, ptRect->tMin.y}, { fX + ptRect->tMax.x - ptRect->tMin.x, ptRect->tMax.y} }; return tResult;}
-static inline plRect pl_rect_move_start_y  (const plRect* ptRect, float fY)                   { const plRect tResult = {{ ptRect->tMin.x, fY}, { ptRect->tMax.x, fY + ptRect->tMax.y - ptRect->tMin.y}}; return tResult;}
+static inline plRect plu_calculate_rect     (plVec2 tStart, plVec2 tSize)                      { return plu_create_rect_vec2(tStart, plu_add_vec2(tStart, tSize));}
+static inline float  plu_rect_width         (const plRect* ptRect)                             { return ptRect->tMax.x - ptRect->tMin.x;}
+static inline float  plu_rect_height        (const plRect* ptRect)                             { return ptRect->tMax.y - ptRect->tMin.y;}
+static inline plVec2 plu_rect_size          (const plRect* ptRect)                             { return plu_sub_vec2(ptRect->tMax, ptRect->tMin);}
+static inline plVec2 plu_rect_center        (const plRect* ptRect)                             { return plu_create_vec2((ptRect->tMax.x + ptRect->tMin.x) * 0.5f, (ptRect->tMax.y + ptRect->tMin.y) * 0.5f);}
+static inline plVec2 plu_rect_top_left      (const plRect* ptRect)                             { return ptRect->tMin;}
+static inline plVec2 plu_rect_top_right     (const plRect* ptRect)                             { return plu_create_vec2(ptRect->tMax.x, ptRect->tMin.y);}
+static inline plVec2 plu_rect_bottom_left   (const plRect* ptRect)                             { return plu_create_vec2(ptRect->tMin.x, ptRect->tMax.y);}
+static inline plVec2 plu_rect_bottom_right  (const plRect* ptRect)                             { return ptRect->tMax;}
+static inline bool   plu_rect_contains_point(const plRect* ptRect, plVec2 tP)                  { return tP.x >= ptRect->tMin.x && tP.y >= ptRect->tMin.y && tP.x < ptRect->tMax.x && tP.y < ptRect->tMax.y; }
+static inline bool   plu_rect_contains_rect (const plRect* ptRect0, const plRect* ptRect1)     { return ptRect1->tMin.x >= ptRect0->tMin.x && ptRect1->tMin.y >= ptRect0->tMin.y && ptRect1->tMax.x <= ptRect0->tMax.x && ptRect1->tMax.y <= ptRect0->tMax.y; }
+static inline bool   plu_rect_overlaps_rect (const plRect* ptRect0, const plRect* ptRect1)     { return ptRect1->tMin.y <  ptRect0->tMax.y && ptRect1->tMax.y >  ptRect0->tMin.y && ptRect1->tMin.x <  ptRect0->tMax.x && ptRect1->tMax.x > ptRect0->tMin.x; }
+static inline bool   plu_rect_is_inverted   (const plRect* ptRect)                             { return ptRect->tMin.x > ptRect->tMax.x || ptRect->tMin.y > ptRect->tMax.y; }
+static inline plRect plu_rect_expand        (const plRect* ptRect, float fPadding)             { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x - fPadding, ptRect->tMin.y - fPadding); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x + fPadding, ptRect->tMax.y + fPadding); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_expand_vec2   (const plRect* ptRect, plVec2 tPadding)            { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x - tPadding.x, ptRect->tMin.y - tPadding.y); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x + tPadding.x, ptRect->tMax.y + tPadding.y); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_clip          (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = plu_create_vec2(plu_maxf(ptRect0->tMin.x, ptRect1->tMin.x), plu_maxf(ptRect0->tMin.y, ptRect1->tMin.y)); const plVec2 tMax = plu_create_vec2(plu_minf(ptRect0->tMax.x, ptRect1->tMax.x), plu_minf(ptRect0->tMax.y, ptRect1->tMax.y)); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_clip_full     (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = plu_clamp_vec2(ptRect1->tMin, ptRect0->tMin, ptRect1->tMax); const plVec2 tMax = plu_clamp_vec2(ptRect1->tMin, ptRect0->tMax, ptRect1->tMax); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_floor         (const plRect* ptRect)                             { const plVec2 tMin = plu_create_vec2( floorf(ptRect->tMin.x), floorf(ptRect->tMin.y)); const plVec2 tMax = plu_create_vec2(floorf(ptRect->tMax.x), floorf(ptRect->tMax.y)); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_translate_vec2(const plRect* ptRect, plVec2 tDelta)              { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x + tDelta.x, ptRect->tMin.y + tDelta.y); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x + tDelta.x, ptRect->tMax.y + tDelta.y); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_translate_x   (const plRect* ptRect, float fDx)                  { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x + fDx, ptRect->tMin.y); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x + fDx, ptRect->tMax.y); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_translate_y   (const plRect* ptRect, float fDy)                  { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x, ptRect->tMin.y + fDy); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x, ptRect->tMax.y + fDy); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_add_point     (const plRect* ptRect, plVec2 tP)                  { const plVec2 tMin = plu_create_vec2(ptRect->tMin.x > tP.x ? tP.x : ptRect->tMin.x, ptRect->tMin.y > tP.y ? tP.y : ptRect->tMin.y); const plVec2 tMax = plu_create_vec2(ptRect->tMax.x < tP.x ? tP.x : ptRect->tMax.x, ptRect->tMax.y < tP.y ? tP.y : ptRect->tMax.y); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_add_rect      (const plRect* ptRect0, const plRect* ptRect1)     { const plVec2 tMin = plu_create_vec2(ptRect0->tMin.x > ptRect1->tMin.x ? ptRect1->tMin.x : ptRect0->tMin.x, ptRect0->tMin.y > ptRect1->tMin.y ? ptRect1->tMin.y : ptRect0->tMin.y); const plVec2 tMax = plu_create_vec2(ptRect0->tMax.x < ptRect1->tMax.x ? ptRect1->tMax.x : ptRect0->tMax.x, ptRect0->tMax.y < ptRect1->tMax.y ? ptRect1->tMax.y : ptRect0->tMax.y); return plu_create_rect_vec2(tMin, tMax);}
+static inline plRect plu_rect_move_center   (const plRect* ptRect, float fX, float fY)         { const plVec2 tCurrentCenter = plu_rect_center(ptRect); const float fDx = fX - tCurrentCenter.x; const float fDy = fY - tCurrentCenter.y; const plRect tResult = {{ ptRect->tMin.x + fDx, ptRect->tMin.y + fDy},{ ptRect->tMax.x + fDx, ptRect->tMax.y + fDy}}; return tResult;}
+static inline plRect plu_rect_move_center_y (const plRect* ptRect, float fY)                   { const plVec2 tCurrentCenter = plu_rect_center(ptRect); const float fDy = fY - tCurrentCenter.y; const plRect tResult = {{ ptRect->tMin.x, ptRect->tMin.y + fDy},{ ptRect->tMax.x, ptRect->tMax.y + fDy}}; return tResult;}
+static inline plRect plu_rect_move_center_x (const plRect* ptRect, float fX)                   { const plVec2 tCurrentCenter = plu_rect_center(ptRect); const float fDx = fX - tCurrentCenter.x; const plRect tResult = { { ptRect->tMin.x + fDx, ptRect->tMin.y}, { ptRect->tMax.x + fDx, ptRect->tMax.y} }; return tResult;}
+static inline plRect plu_rect_move_start    (const plRect* ptRect, float fX, float fY)         { const plRect tResult = {{ fX, fY}, { fX + ptRect->tMax.x - ptRect->tMin.x, fY + ptRect->tMax.y - ptRect->tMin.y} }; return tResult;}
+static inline plRect plu_rect_move_start_x  (const plRect* ptRect, float fX)                   { const plRect tResult = { { fX, ptRect->tMin.y}, { fX + ptRect->tMax.x - ptRect->tMin.x, ptRect->tMax.y} }; return tResult;}
 
-#define PL_IO_VEC2_LENGTH_SQR(vec) (((vec).x * (vec).x) + ((vec).y * (vec).y))
-#define PL_IO_VEC2_SUBTRACT(v1, v2) (plVec2){ (v1).x - (v2).x, (v1).y - (v2).y}
-#define PL_IO_VEC2(v1, v2) (plVec2){(v1), (v2)}
-#define PL_IO_MAX(x, y) (x) > (y) ? (x) : (y)
+#define PLU_VEC2_LENGTH_SQR(vec) (((vec).x * (vec).x) + ((vec).y * (vec).y))
 
 //-----------------------------------------------------------------------------
 // [SECTION] stretchy buffer internal
 //-----------------------------------------------------------------------------
 
-#define pl__ui_sb_header(buf) ((plUiSbHeader_*)(((char*)(buf)) - sizeof(plUiSbHeader_)))
-#define pl__ui_sb_may_grow(buf, s, n, m, X, Y) pl__ui_sb_may_grow_((void**)&(buf), (s), (n), (m), __FILE__, __LINE__)
+#define plu__sb_header(buf) ((plUiSbHeader_*)(((char*)(buf)) - sizeof(plUiSbHeader_)))
+#define plu__sb_may_grow(buf, s, n, m, X, Y) plu__sb_may_grow_((void**)&(buf), (s), (n), (m), __FILE__, __LINE__)
 
 typedef struct
 {
@@ -310,39 +280,39 @@ typedef struct
 } plUiSbHeader_;
 
 static void
-pl__ui_sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems, const char* pcFile, int iLine)
+plu__sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems, const char* pcFile, int iLine)
 {
 
-    plUiSbHeader_* ptOldHeader = pl__ui_sb_header(*ptrBuffer);
+    plUiSbHeader_* ptOldHeader = plu__sb_header(*ptrBuffer);
 
     const size_t szNewSize = (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_);
-    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine); //-V592
+    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)PL_UI_ALLOC_INDIRECT(szNewSize, pcFile, iLine); //-V592
     memset(ptNewHeader, 0, (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_));
     if(ptNewHeader)
     {
         ptNewHeader->uSize = ptOldHeader->uSize;
         ptNewHeader->uCapacity = ptOldHeader->uCapacity + (uint32_t)szNewItems;
         memcpy(&ptNewHeader[1], *ptrBuffer, ptOldHeader->uSize * szElementSize);
-        PL_FREE(ptOldHeader);
+        PL_UI_FREE(ptOldHeader);
         *ptrBuffer = &ptNewHeader[1];
     }
 }
 
 static void
-pl__ui_sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity, const char* pcFile, int iLine)
+plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity, const char* pcFile, int iLine)
 {
     if(*ptrBuffer)
     {   
-        plUiSbHeader_* ptOriginalHeader = pl__ui_sb_header(*ptrBuffer);
+        plUiSbHeader_* ptOriginalHeader = plu__sb_header(*ptrBuffer);
         if(ptOriginalHeader->uSize + szNewItems > ptOriginalHeader->uCapacity)
         {
-            pl__ui_sb_grow(ptrBuffer, szElementSize, szNewItems, pcFile, iLine);
+            plu__sb_grow(ptrBuffer, szElementSize, szNewItems, pcFile, iLine);
         }
     }
     else // first run
     {
         const size_t szNewSize = szMinCapacity * szElementSize + sizeof(plUiSbHeader_);
-        plUiSbHeader_* ptHeader = (plUiSbHeader_*)PL_ALLOC_INDIRECT(szNewSize, pcFile, iLine);
+        plUiSbHeader_* ptHeader = (plUiSbHeader_*)PL_UI_ALLOC_INDIRECT(szNewSize, pcFile, iLine);
         memset(ptHeader, 0, szMinCapacity * szElementSize + sizeof(plUiSbHeader_));
         if(ptHeader)
         {
@@ -357,74 +327,71 @@ pl__ui_sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, s
 // [SECTION] stretchy buffer
 //-----------------------------------------------------------------------------
 
-#define pl_sb_capacity(buf) \
-    ((buf) ? pl__ui_sb_header((buf))->uCapacity : 0u)
+#define plu_sb_capacity(buf) \
+    ((buf) ? plu__sb_header((buf))->uCapacity : 0u)
 
-#define pl_sb_size(buf) \
-    ((buf) ? pl__ui_sb_header((buf))->uSize : 0u)
+#define plu_sb_size(buf) \
+    ((buf) ? plu__sb_header((buf))->uSize : 0u)
 
-#define pl_sb_pop(buf) \
-    (buf)[--pl__ui_sb_header((buf))->uSize]
+#define plu_sb_pop(buf) \
+    (buf)[--plu__sb_header((buf))->uSize]
 
-#define pl_sb_pop_n(buf, n) \
-    pl__ui_sb_header((buf))->uSize-=(n)
+#define plu_sb_pop_n(buf, n) \
+    plu__sb_header((buf))->uSize-=(n)
 
-#define pl_sb_top(buf) \
-    ((buf)[pl__ui_sb_header((buf))->uSize-1])
+#define plu_sb_top(buf) \
+    ((buf)[plu__sb_header((buf))->uSize-1])
 
-#define pl_sb_last(buf) \
-    pl_sb_top((buf))
+#define plu_sb_last(buf) \
+    plu_sb_top((buf))
 
-#define pl_sb_free(buf) \
-    if((buf)){ PL_FREE(pl__ui_sb_header(buf));} (buf) = NULL;
+#define plu_sb_free(buf) \
+    if((buf)){ PL_UI_FREE(plu__sb_header(buf));} (buf) = NULL;
 
-#define pl_sb_reset(buf) \
-    if((buf)){ pl__ui_sb_header((buf))->uSize = 0u;}
+#define plu_sb_reset(buf) \
+    if((buf)){ plu__sb_header((buf))->uSize = 0u;}
 
-#define pl_sb_back(buf) \
-    pl_sb_top((buf))
+#define plu_sb_back(buf) \
+    plu_sb_top((buf))
 
-#define pl_sb_end(buf) \
-    ((buf) ? (buf) + pl__ui_sb_header((buf))->uSize : (buf))
+#define plu_sb_end(buf) \
+    ((buf) ? (buf) + plu__sb_header((buf))->uSize : (buf))
 
-#define pl_sb_add_n(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), pl__ui_sb_header(buf)->uSize - (n)) : pl_sb_size(buf))
+#define plu_sb_add_n(buf, n) \
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (plu__sb_header(buf)->uSize += (n), plu__sb_header(buf)->uSize - (n)) : plu_sb_size(buf))
 
-#define pl_sb_add(buf) \
-    pl_sb_add_n((buf), 1)
+#define plu_sb_add(buf) \
+    plu_sb_add_n((buf), 1)
 
-#define pl_sb_add_ptr_n(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (pl__ui_sb_header(buf)->uSize += (n), &(buf)[pl__ui_sb_header(buf)->uSize - (n)]) : (buf))
+#define plu_sb_add_ptr_n(buf, n) \
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (plu__sb_header(buf)->uSize += (n), &(buf)[plu__sb_header(buf)->uSize - (n)]) : (buf))
 
-#define pl_sb_add_ptr(buf, n) \
-    pl_sb_add_ptr_n((buf), 1)
+#define plu_sb_add_ptr(buf, n) \
+    plu_sb_add_ptr_n((buf), 1)
 
-#define pl_sb_push(buf, v) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), 1, 8, __FILE__, __LINE__), (buf)[pl__ui_sb_header((buf))->uSize++] = (v))
+#define plu_sb_push(buf, v) \
+    (plu__sb_may_grow((buf), sizeof(*(buf)), 1, 8, __FILE__, __LINE__), (buf)[plu__sb_header((buf))->uSize++] = (v))
 
-#define pl_sb_reserve(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__))
+#define plu_sb_reserve(buf, n) \
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__))
 
-#define pl_sb_resize(buf, n) \
-    (pl__ui_sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), pl__ui_sb_header((buf))->uSize = (n))
+#define plu_sb_resize(buf, n) \
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), plu__sb_header((buf))->uSize = (n))
 
-#define pl_sb_del_n(buf, i, n) \
-    (memmove(&(buf)[i], &(buf)[(i) + (n)], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))), pl__ui_sb_header(buf)->uSize -= (n))
+#define plu_sb_del_n(buf, i, n) \
+    (memmove(&(buf)[i], &(buf)[(i) + (n)], sizeof *(buf) * (plu__sb_header(buf)->uSize - (n) - (i))), plu__sb_header(buf)->uSize -= (n))
 
-#define pl_sb_del(buf, i) \
-    pl_sb_del_n((buf), (i), 1)
+#define plu_sb_del(buf, i) \
+    plu_sb_del_n((buf), (i), 1)
 
-#define pl_sb_del_swap(buf, i) \
-    ((buf)[i] = pl_sb_last(buf), pl__ui_sb_header(buf)->uSize -= 1)
+#define plu_sb_del_swap(buf, i) \
+    ((buf)[i] = plu_sb_last(buf), plu__sb_header(buf)->uSize -= 1)
 
-#define pl_sb_insert_n(buf, i, n) \
-    (pl_sb_add_n((buf), (n)), memmove(&(buf)[(i) + (n)], &(buf)[i], sizeof *(buf) * (pl__ui_sb_header(buf)->uSize - (n) - (i))))
+#define plu_sb_insert_n(buf, i, n) \
+    (plu_sb_add_n((buf), (n)), memmove(&(buf)[(i) + (n)], &(buf)[i], sizeof *(buf) * (plu__sb_header(buf)->uSize - (n) - (i))))
 
-#define pl_sb_insert(buf, i, v) \
-    (pl_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
-
-#define pl_sb_sprintf(buf, pcFormat, ...) \
-    pl__ui_sb_sprintf(&(buf), (pcFormat), __VA_ARGS__)
+#define plu_sb_insert(buf, i, v) \
+    (plu_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
 
 //-----------------------------------------------------------------------------
 // [SECTION] internal structs
@@ -523,12 +490,12 @@ typedef struct _plUiLayoutRow
     uint32_t             uEntryStartIndex;     // offset into parent window sbtRowTemplateEntries buffer
 } plUiLayoutRow;
 
-typedef struct _plInputTextState
+typedef struct _plUiInputTextState
 {
     uint32_t           uId;
     int                iCurrentLengthW;        // widget id owning the text state
     int                iCurrentLengthA;        // we need to maintain our buffer length in both UTF-8 and wchar format. UTF-8 length is valid even if TextA is not.
-    plWChar*           sbTextW;                // edit buffer, we need to persist but can't guarantee the persistence of the user-provided buffer. so we copy into own buffer.
+    plUiWChar*           sbTextW;                // edit buffer, we need to persist but can't guarantee the persistence of the user-provided buffer. so we copy into own buffer.
     char*              sbTextA;                // temporary UTF8 buffer for callbacks and other operations. this is not updated in every code-path! size=capacity.
     char*              sbInitialTextA;         // backup of end-user buffer at the time of focus (in UTF-8, unaltered)
     bool               bTextAIsValid;          // temporary UTF8 buffer is not initially valid before we make the widget active (until then we pull the data from user argument)
@@ -540,7 +507,7 @@ typedef struct _plInputTextState
     bool               bSelectedAllMouseLock;  // after a double-click to select all, we ignore further mouse drags to update selection
     bool               bEdited;                // edited this frame
     plUiInputTextFlags tFlags;    // copy of InputText() flags. may be used to check if e.g. ImGuiInputTextFlags_Password is set.
-} plInputTextState;
+} plUiInputTextState;
 
 //-----------------------------------------------------------------------------
 // [SECTION] plUiStorage
@@ -584,7 +551,7 @@ typedef struct _plUiTempWindowData
 typedef struct _plUiWindow
 {
     const char*          pcName;
-    uint32_t             uId;                     // window Id (=pl_str_hash(pcName))
+    uint32_t             uId;                     // window Id (=plu_str_hash(pcName))
     plUiWindowFlags      tFlags;                  // plUiWindowFlags, not all honored at the moment
     plVec2               tPos;                    // position of window in viewport
     plVec2               tContentSize;            // size of contents/scrollable client area
@@ -648,7 +615,7 @@ typedef struct _plUiContext
     uint32_t*          sbuIdStack;             // id stack for hashing IDs, container items usually push/pop these
 
     // widget state
-    plInputTextState   tInputTextState;
+    plUiInputTextState tInputTextState;
     uint32_t           uHoveredId;             // set at the end of the previous frame from uNextHoveredId
     uint32_t           uActiveId;              // set at the end of the previous frame from uNextActiveId
     uint32_t           uNextHoveredId;         // set during current frame (by end of frame, should be last item hovered)
@@ -721,20 +688,20 @@ static inline bool   pl__ui_should_render(const plVec2* ptStartPos, const plVec2
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~text state system~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 static bool        pl__input_text_filter_character(unsigned int* puChar, plUiInputTextFlags tFlags);
-static inline void pl__text_state_cursor_anim_reset  (plInputTextState* ptState) { ptState->fCursorAnim = -0.30f; }
-static inline void pl__text_state_cursor_clamp       (plInputTextState* ptState) { ptState->tStb.cursor = pl_min(ptState->tStb.cursor, ptState->iCurrentLengthW); ptState->tStb.select_start = pl_min(ptState->tStb.select_start, ptState->iCurrentLengthW); ptState->tStb.select_end = pl_min(ptState->tStb.select_end, ptState->iCurrentLengthW);}
-static inline bool pl__text_state_has_selection      (plInputTextState* ptState) { return ptState->tStb.select_start != ptState->tStb.select_end; }
-static inline void pl__text_state_clear_selection    (plInputTextState* ptState) { ptState->tStb.select_start = ptState->tStb.select_end = ptState->tStb.cursor; }
-static inline int  pl__text_state_get_cursor_pos     (plInputTextState* ptState) { return ptState->tStb.cursor; }
-static inline int  pl__text_state_get_selection_start(plInputTextState* ptState) { return ptState->tStb.select_start; }
-static inline int  pl__text_state_get_selection_end  (plInputTextState* ptState) { return ptState->tStb.select_end; }
-static inline void pl__text_state_select_all         (plInputTextState* ptState) { ptState->tStb.select_start = 0; ptState->tStb.cursor = ptState->tStb.select_end = ptState->iCurrentLengthW; ptState->tStb.has_preferred_x = 0; }
+static inline void pl__text_state_cursor_anim_reset  (plUiInputTextState* ptState) { ptState->fCursorAnim = -0.30f; }
+static inline void pl__text_state_cursor_clamp       (plUiInputTextState* ptState) { ptState->tStb.cursor = plu_min(ptState->tStb.cursor, ptState->iCurrentLengthW); ptState->tStb.select_start = plu_min(ptState->tStb.select_start, ptState->iCurrentLengthW); ptState->tStb.select_end = plu_min(ptState->tStb.select_end, ptState->iCurrentLengthW);}
+static inline bool pl__text_state_has_selection      (plUiInputTextState* ptState) { return ptState->tStb.select_start != ptState->tStb.select_end; }
+static inline void pl__text_state_clear_selection    (plUiInputTextState* ptState) { ptState->tStb.select_start = ptState->tStb.select_end = ptState->tStb.cursor; }
+static inline int  pl__text_state_get_cursor_pos     (plUiInputTextState* ptState) { return ptState->tStb.cursor; }
+static inline int  pl__text_state_get_selection_start(plUiInputTextState* ptState) { return ptState->tStb.select_start; }
+static inline int  pl__text_state_get_selection_end  (plUiInputTextState* ptState) { return ptState->tStb.select_end; }
+static inline void pl__text_state_select_all         (plUiInputTextState* ptState) { ptState->tStb.select_start = 0; ptState->tStb.cursor = ptState->tStb.select_end = ptState->iCurrentLengthW; ptState->tStb.has_preferred_x = 0; }
 
-static inline void pl__text_state_clear_text      (plInputTextState* ptState)           { ptState->iCurrentLengthA = ptState->iCurrentLengthW = 0; ptState->sbTextA[0] = 0; ptState->sbTextW[0] = 0; pl__text_state_cursor_clamp(ptState);}
-static inline void pl__text_state_free_memory     (plInputTextState* ptState)           { pl_sb_free(ptState->sbTextA); pl_sb_free(ptState->sbTextW); pl_sb_free(ptState->sbInitialTextA);}
-static inline int  pl__text_state_undo_avail_count(plInputTextState* ptState)           { return ptState->tStb.undostate.undo_point;}
-static inline int  pl__text_state_redo_avail_count(plInputTextState* ptState)           { return STB_TEXTEDIT_UNDOSTATECOUNT - ptState->tStb.undostate.redo_point; }
-static void        pl__text_state_on_key_press    (plInputTextState* ptState, int iKey);
+static inline void pl__text_state_clear_text      (plUiInputTextState* ptState)           { ptState->iCurrentLengthA = ptState->iCurrentLengthW = 0; ptState->sbTextA[0] = 0; ptState->sbTextW[0] = 0; pl__text_state_cursor_clamp(ptState);}
+static inline void pl__text_state_free_memory     (plUiInputTextState* ptState)           { plu_sb_free(ptState->sbTextA); plu_sb_free(ptState->sbTextW); plu_sb_free(ptState->sbInitialTextA);}
+static inline int  pl__text_state_undo_avail_count(plUiInputTextState* ptState)           { return ptState->tStb.undostate.undo_point;}
+static inline int  pl__text_state_redo_avail_count(plUiInputTextState* ptState)           { return STB_TEXTEDIT_UNDOSTATECOUNT - ptState->tStb.undostate.redo_point; }
+static void        pl__text_state_on_key_press    (plUiInputTextState* ptState, int iKey);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~widget behavior~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -761,7 +728,7 @@ void                 pl_set_ptr      (plUiStorage* ptStorage, uint32_t uKey, voi
 
 // (borrowed from Dear ImGui)
 // CRC32 needs a 1KB lookup table (not cache friendly)
-static const uint32_t gauCrc32LookupTable[256] =
+static const uint32_t gauiCrc32LUT[256] =
 {
     0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,0x09B64C2B,0x7EB17CBD,0xE7B82D07,0x90BF1D91,
     0x1DB71064,0x6AB020F2,0xF3B97148,0x84BE41DE,0x1ADAD47D,0x6DDDE4EB,0xF4D4B551,0x83D385C7,0x136C9856,0x646BA8C0,0xFD62F97A,0x8A65C9EC,0x14015C4F,0x63066CD9,0xFA0F3D63,0x8D080DF5,
@@ -782,23 +749,23 @@ static const uint32_t gauCrc32LookupTable[256] =
 };
 
 static uint32_t
-pl_str_hash_data(const void* pData, size_t szDataSize, uint32_t uSeed)
+plu_str_hash_data(const void* pData, size_t szDataSize, uint32_t uSeed)
 {
     uint32_t uCrc = ~uSeed;
     const unsigned char* pucData = (const unsigned char*)pData;
-    const uint32_t* puCrc32Lut = gauCrc32LookupTable;
+    const uint32_t* puCrc32Lut = gauiCrc32LUT;
     while (szDataSize-- != 0)
         uCrc = (uCrc >> 8) ^ puCrc32Lut[(uCrc & 0xFF) ^ *pucData++];
     return ~uCrc;  
 }
 
 static uint32_t
-pl_str_hash(const char* pcData, size_t szDataSize, uint32_t uSeed)
+plu_str_hash(const char* pcData, size_t szDataSize, uint32_t uSeed)
 {
     uSeed = ~uSeed;
     uint32_t uCrc = uSeed;
     const unsigned char* pucData = (const unsigned char*)pcData;
-    const uint32_t* puCrc32Lut = gauCrc32LookupTable;
+    const uint32_t* puCrc32Lut = gauiCrc32LUT;
     if (szDataSize != 0)
     {
         while (szDataSize-- != 0)
@@ -825,9 +792,9 @@ pl_str_hash(const char* pcData, size_t szDataSize, uint32_t uSeed)
     return ~uCrc;
 }
 
-#define pl_string_min(Value1, Value2) ((Value1) > (Value2) ? (Value2) : (Value1))
+#define plu_string_min(Value1, Value2) ((Value1) > (Value2) ? (Value2) : (Value1))
 static int
-pl_text_char_from_utf8(uint32_t* puOutChars, const char* pcInText, const char* pcTextEnd)
+plu_text_char_from_utf8(uint32_t* puOutChars, const char* pcInText, const char* pcTextEnd)
 {
     static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
     static const int masks[]  = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
@@ -872,7 +839,7 @@ pl_text_char_from_utf8(uint32_t* puOutChars, const char* pcInText, const char* p
         // One byte is consumed in case of invalid first byte of pcInText.
         // All available bytes (at most `len` bytes) are consumed on incomplete/invalid second to last bytes.
         // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
-        wanted = pl_string_min(wanted, !!s[0] + !!s[1] + !!s[2] + !!s[3]);
+        wanted = plu_string_min(wanted, !!s[0] + !!s[1] + !!s[2] + !!s[3]);
         *puOutChars = 0xFFFD;
     }
 
