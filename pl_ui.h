@@ -21,6 +21,10 @@ Index of this file:
 #ifndef PL_UI_H
 #define PL_UI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] includes
 //-----------------------------------------------------------------------------
@@ -847,5 +851,9 @@ typedef struct _plIO
     float _fFrameRateSecPerFrameAccum;
 
 } plIO;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PL_UI_H

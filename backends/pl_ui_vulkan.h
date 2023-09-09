@@ -17,6 +17,10 @@ Index of this file:
 #ifndef PL_UI_VULKAN_H
 #define PL_UI_VULKAN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] includes
 //-----------------------------------------------------------------------------
@@ -52,5 +56,8 @@ void            pl_submit_vulkan_drawlist   (plDrawList* ptDrawlist, float fWidt
 void            pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount);
 VkDescriptorSet pl_add_texture              (VkImageView tImageView, VkImageLayout tImageLayout);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PL_UI_VULKAN_H
