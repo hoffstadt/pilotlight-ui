@@ -257,7 +257,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
 }
 
 void
-pl_build_metal_font_atlas(plFontAtlas* atlas)
+pl_create_metal_font_texture(plFontAtlas* atlas)
 {
     plUiContext* ptCtx = pl_get_ui_context();
     
@@ -294,7 +294,7 @@ pl_build_metal_font_atlas(plFontAtlas* atlas)
 }
 
 void
-pl_cleanup_metal_font_atlas(plFontAtlas* atlas)
+pl_cleanup_metal_font_texture(plFontAtlas* atlas)
 {
     plUiContext* ptCtx = pl_get_ui_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;

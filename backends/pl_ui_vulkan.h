@@ -47,14 +47,14 @@ typedef struct _plVulkanInit
 // [SECTION] public api
 //-----------------------------------------------------------------------------
 
-void            pl_initialize_vulkan        (const plVulkanInit* ptInit);
-void            pl_cleanup_vulkan           (void);
-void            pl_build_vulkan_font_atlas  (plFontAtlas* ptAtlas);
-void            pl_cleanup_vulkan_font_atlas(plFontAtlas* ptAtlas);
-void            pl_new_draw_frame_vulkan    (void);
-void            pl_submit_vulkan_drawlist   (plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex);
-void            pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount);
-VkDescriptorSet pl_add_texture              (VkImageView tImageView, VkImageLayout tImageLayout);
+void            pl_initialize_vulkan          (const plVulkanInit* ptInit);
+void            pl_cleanup_vulkan             (void);
+void            pl_create_vulkan_font_texture (plFontAtlas* ptAtlas);
+void            pl_cleanup_vulkan_font_texture(plFontAtlas* ptAtlas);
+void            pl_new_draw_frame_vulkan      (void);
+void            pl_submit_vulkan_drawlist     (plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex);
+void            pl_submit_vulkan_drawlist_ex  (plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount);
+VkDescriptorSet pl_add_texture                (VkImageView tImageView, VkImageLayout tImageLayout);
 
 #ifdef __cplusplus
 }

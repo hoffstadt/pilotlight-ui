@@ -439,7 +439,7 @@ DispatchRenderLoop(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const C
     // create font atlas
     pl_add_default_font(&fontAtlas);
     pl_build_font_atlas(&fontAtlas);
-    pl_build_metal_font_atlas(&fontAtlas);
+    pl_create_metal_font_texture(&fontAtlas);
     pl_set_default_font(&fontAtlas.sbFonts[0]);  
 }
 

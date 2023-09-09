@@ -29,12 +29,12 @@ Index of this file:
 //-----------------------------------------------------------------------------
 
 NS_ASSUME_NONNULL_BEGIN
-void pl_initialize_metal        (id<MTLDevice> device);
-void pl_cleanup_metal           (void);
-void pl_build_metal_font_atlas  (plFontAtlas* ptAtlas);
-void pl_cleanup_metal_font_atlas(plFontAtlas* ptAtlas);
-void pl_new_draw_frame_metal    (void);
-void pl_submit_metal_drawlist   (plDrawList* ptDrawlist, float fWidth, float fHeight, id<MTLRenderCommandEncoder> renderEncoder, MTLRenderPassDescriptor* renderPassDescriptor);
+void pl_initialize_metal          (id<MTLDevice> device);
+void pl_cleanup_metal             (void);
+void pl_create_metal_font_texture (plFontAtlas* ptAtlas);
+void pl_cleanup_metal_font_texture(plFontAtlas* ptAtlas);
+void pl_new_draw_frame_metal      (void);
+void pl_submit_metal_drawlist     (plDrawList* ptDrawlist, float fWidth, float fHeight, id<MTLRenderCommandEncoder> renderEncoder, MTLRenderPassDescriptor* renderPassDescriptor);
 NS_ASSUME_NONNULL_END
 
 #endif // PL_UI_VULKAN_H

@@ -512,7 +512,7 @@ pl_new_draw_frame_vulkan(void)
 }
 
 void
-pl_cleanup_vulkan_font_atlas(plFontAtlas* ptAtlas)
+pl_cleanup_vulkan_font_texture(plFontAtlas* ptAtlas)
 {
     plUiContext* ptCtx = pl_get_ui_context();
     plVulkanDrawContext* ptVulkanDrawContext = ptCtx->tIO.pBackendRendererData;
@@ -813,7 +813,7 @@ pl_add_texture(VkImageView tImageView, VkImageLayout tImageLayout)
 }
 
 void
-pl_build_vulkan_font_atlas(plFontAtlas* ptAtlas)
+pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
 {
     plUiContext* ptCtx = pl_get_ui_context();
     

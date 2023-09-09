@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
     // create font atlas
     pl_add_default_font(&fontAtlas);
     pl_build_font_atlas(&fontAtlas);
-    pl_build_vulkan_font_atlas(&fontAtlas);
+    pl_create_vulkan_font_texture(&fontAtlas);
     pl_set_default_font(&fontAtlas.sbFonts[0]);
 
     // main loop
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
             render_frame();
     }
 
-    pl_cleanup_vulkan_font_atlas(&fontAtlas);
+    pl_cleanup_vulkan_font_texture(&fontAtlas);
     pl_cleanup_font_atlas(&fontAtlas);
 
     
