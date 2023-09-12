@@ -50,7 +50,7 @@ static void  pl__add_vertex(plDrawLayer* layer, plVec2 pos, plVec4 color, plVec2
 static void  pl__add_index(plDrawLayer* layer, uint32_t vertexStart, uint32_t i0, uint32_t i1, uint32_t i2);
 static float pl__get_max(float v1, float v2) { return v1 > v2 ? v1 : v2;}
 static int   pl__get_min(int v1, int v2)     { return v1 < v2 ? v1 : v2;}
-static char* pl__read_file(const char* file);
+static char* plu__read_file(const char* file);
 
 // math
 #define pl__add_vec2(left, right)      (plVec2){(left).x + (right).x, (left).y + (right).y}
@@ -742,7 +742,7 @@ pl_add_bezier_cubic(plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, pl
 void
 pl_add_font_from_file_ttf(plFontAtlas* atlas, plFontConfig config, const char* file)
 {
-    void* data = pl__read_file(file); // freed after atlas is created
+    void* data = plu__read_file(file); // freed after atlas is created
     pl_add_font_from_memory_ttf(atlas, config, data);
 }
 
@@ -1465,7 +1465,7 @@ pl__add_index(plDrawLayer* layer, uint32_t vertexStart, uint32_t i0, uint32_t i1
 }
 
 static char*
-pl__read_file(const char* file)
+plu__read_file(const char* file)
 {
     FILE* fileHandle = fopen(file, "rb");
 
