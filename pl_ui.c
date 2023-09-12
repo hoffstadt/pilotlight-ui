@@ -373,6 +373,9 @@ pl_create_ui_context(void)
     gptCtx->tIO.afMainViewportSize[0] = 500.0f;
     gptCtx->tIO.afMainViewportSize[1] = 500.0f;
     gptCtx->tIO.bViewportSizeChanged = true;
+
+    gptCtx->tFrameBufferScale.x = 1.0f;
+    gptCtx->tFrameBufferScale.y = 1.0f;
     pl_set_dark_theme();
     return gptCtx;
 }
