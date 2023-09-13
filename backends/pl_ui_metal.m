@@ -77,7 +77,7 @@ static inline CFTimeInterval GetMachAbsoluteTimeInSeconds() { return (CFTimeInte
 void
 pl_initialize_metal(id<MTLDevice> device)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     MetalContext* ptMetalDrawContext = [[MetalContext alloc] init];
     ptMetalDrawContext.device = device;
     ptCtx->tIO.pBackendRendererData = ptMetalDrawContext;
@@ -86,7 +86,7 @@ pl_initialize_metal(id<MTLDevice> device)
 void
 pl_cleanup_metal(void)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
     [metalCtx dealloc];
 }
@@ -99,13 +99,13 @@ pl_new_draw_frame_metal(void)
 void
 pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTLRenderCommandEncoder> renderEncoder, MTLRenderPassDescriptor* renderPassDescriptor2)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
     FramebufferDescriptor* renderPassDescriptor = [[FramebufferDescriptor alloc] initWithRenderPassDescriptor:renderPassDescriptor2];
 
     // ensure gpu vertex buffer size is adequate
-    size_t vertexBufferLength = (size_t)plu_sb_size(drawlist->sbVertexBuffer) * sizeof(plDrawVertex);
-    size_t indexBufferLength = (size_t)drawlist->indexBufferByteSize;
+    size_t vertexBufferLength = (size_t)plu_sb_size(drawlist->sbtVertexBuffer) * sizeof(plDrawVertex);
+    size_t indexBufferLength = (size_t)drawlist->uIndexBufferByteSize;
 
     if(indexBufferLength == 0)
         return;
@@ -113,34 +113,34 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     MetalBuffer* indexBuffer = [metalCtx dequeueReusableBufferOfLength:indexBufferLength device:metalCtx.device];
 
     // copy vertex data to gpu
-    memcpy(vertexBuffer.buffer.contents, drawlist->sbVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(drawlist->sbVertexBuffer));
+    memcpy(vertexBuffer.buffer.contents, drawlist->sbtVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(drawlist->sbtVertexBuffer));
 
     // index GPU data transfer
     uint32_t uTempIndexBufferOffset = 0u;  
     uint32_t globalIdxBufferIndexOffset = 0u;
 
-    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbSubmittedLayers); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbtSubmittedLayers); i++)
     {
         plDrawCommand* lastCommand = NULL;
-        plDrawLayer* layer = drawlist->sbSubmittedLayers[i];
+        plDrawLayer* layer = drawlist->sbtSubmittedLayers[i];
 
         unsigned char* destination = indexBuffer.buffer.contents;
-        memcpy(&destination[uTempIndexBufferOffset], layer->sbIndexBuffer, sizeof(uint32_t) * plu_sb_size(layer->sbIndexBuffer));
+        memcpy(&destination[uTempIndexBufferOffset], layer->sbuIndexBuffer, sizeof(uint32_t) * plu_sb_size(layer->sbuIndexBuffer));
 
-        uTempIndexBufferOffset += plu_sb_size(layer->sbIndexBuffer) * sizeof(uint32_t);
+        uTempIndexBufferOffset += plu_sb_size(layer->sbuIndexBuffer) * sizeof(uint32_t);
 
         // attempt to merge commands
-        for(uint32_t j = 0u; j < plu_sb_size(layer->sbCommandBuffer); j++)
+        for(uint32_t j = 0u; j < plu_sb_size(layer->sbtCommandBuffer); j++)
         {
-            plDrawCommand *layerCommand = &layer->sbCommandBuffer[j];
+            plDrawCommand *layerCommand = &layer->sbtCommandBuffer[j];
             bool bCreateNewCommand = true;
 
             if(lastCommand)
             {
                 // check for same texture (allows merging draw calls)
-                if(lastCommand->textureId == layerCommand->textureId && lastCommand->sdf == layerCommand->sdf)
+                if(lastCommand->tTextureId == layerCommand->tTextureId && lastCommand->bSdf == layerCommand->bSdf)
                 {
-                    lastCommand->elementCount += layerCommand->elementCount;
+                    lastCommand->uElementCount += layerCommand->uElementCount;
                     bCreateNewCommand = false;
                 }
 
@@ -154,14 +154,14 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
 
             if(bCreateNewCommand)
             {
-                layerCommand->indexOffset = globalIdxBufferIndexOffset + layerCommand->indexOffset;
-                plu_sb_push(drawlist->sbDrawCommands, *layerCommand);       
+                layerCommand->uIndexOffset = globalIdxBufferIndexOffset + layerCommand->uIndexOffset;
+                plu_sb_push(drawlist->sbtDrawCommands, *layerCommand);       
                 lastCommand = layerCommand;
   
             }
             
         }    
-        globalIdxBufferIndexOffset += plu_sb_size(layer->sbIndexBuffer);    
+        globalIdxBufferIndexOffset += plu_sb_size(layer->sbuIndexBuffer);    
     }
     
     // Try to retrieve a render pipeline state that is compatible with the framebuffer config for this frame
@@ -207,16 +207,16 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     bool sdf = false;
     const plVec2 tClipScale = ptCtx->tFrameBufferScale;
     [renderEncoder setRenderPipelineState:renderPipelineState];
-    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbDrawCommands); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(drawlist->sbtDrawCommands); i++)
     {
-        plDrawCommand cmd = drawlist->sbDrawCommands[i];
+        plDrawCommand cmd = drawlist->sbtDrawCommands[i];
 
-        if(cmd.sdf && !sdf)
+        if(cmd.bSdf && !sdf)
         {
             [renderEncoder setRenderPipelineState:renderPipelineStateSDF];
             sdf = true;
         }
-        else if(!cmd.sdf && sdf)
+        else if(!cmd.bSdf && sdf)
         {
             [renderEncoder setRenderPipelineState:renderPipelineState];
             sdf = false;
@@ -251,15 +251,15 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
             [renderEncoder setScissorRect:tScissorRect];
         }
 
-        [renderEncoder setFragmentTexture:cmd.textureId atIndex:2];
-        [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:cmd.elementCount indexType:MTLIndexTypeUInt32 indexBuffer:indexBuffer.buffer indexBufferOffset:cmd.indexOffset * sizeof(uint32_t)];
+        [renderEncoder setFragmentTexture:cmd.tTextureId atIndex:2];
+        [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:cmd.uElementCount indexType:MTLIndexTypeUInt32 indexBuffer:indexBuffer.buffer indexBufferOffset:cmd.uIndexOffset * sizeof(uint32_t)];
     }
 }
 
 void
 pl_create_metal_font_texture(plFontAtlas* atlas)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
     ptCtx->fontAtlas = atlas;
@@ -272,31 +272,31 @@ pl_create_metal_font_texture(plFontAtlas* atlas)
     metalCtx.textureDescriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
 
     // Set the pixel dimensions of the texture
-    metalCtx.textureDescriptor.width = atlas->atlasSize[0];
-    metalCtx.textureDescriptor.height = atlas->atlasSize[1];
+    metalCtx.textureDescriptor.width = atlas->auAtlasSize[0];
+    metalCtx.textureDescriptor.height = atlas->auAtlasSize[1];
 
     // Create the texture from the device by using the descriptor
     metalCtx.fontTexture = [metalCtx.device newTextureWithDescriptor:metalCtx.textureDescriptor];  
 
     MTLRegion region = {
         { 0, 0, 0 }, // MTLOrigin
-        {atlas->atlasSize[0], atlas->atlasSize[1], 1}    // MTLSize
+        {atlas->auAtlasSize[0], atlas->auAtlasSize[1], 1}    // MTLSize
     };
 
-    NSUInteger bytesPerRow = 4 * atlas->atlasSize[0];
+    NSUInteger bytesPerRow = 4 * atlas->auAtlasSize[0];
 
     [metalCtx.fontTexture replaceRegion:region
                 mipmapLevel:0
-                withBytes:atlas->pixelsAsRGBA32
+                withBytes:atlas->pucPixelsAsRGBA32
                 bytesPerRow:bytesPerRow];
 
-    ptCtx->fontAtlas->texture = metalCtx.fontTexture;
+    ptCtx->fontAtlas->tTexture = metalCtx.fontTexture;
 }
 
 void
 pl_cleanup_metal_font_texture(plFontAtlas* atlas)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
     [metalCtx.textureDescriptor dealloc];
 }

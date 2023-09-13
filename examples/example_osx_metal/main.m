@@ -155,7 +155,7 @@ int main()
 {
 
     // os provided apis
-    gptUiCtx = pl_create_ui_context();
+    gptUiCtx = pl_create_context();
 
     // setup & retrieve io context 
     gtIO = pl_get_io();
@@ -440,7 +440,7 @@ DispatchRenderLoop(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const C
     pl_add_default_font(&fontAtlas);
     pl_build_font_atlas(&fontAtlas);
     pl_create_metal_font_texture(&fontAtlas);
-    pl_set_default_font(&fontAtlas.sbFonts[0]);  
+    pl_set_default_font(&fontAtlas.sbtFonts[0]);  
 }
 
 - (void)drawableResize:(CGSize)size

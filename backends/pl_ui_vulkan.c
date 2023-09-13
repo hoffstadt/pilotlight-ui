@@ -308,7 +308,7 @@ static plVulkanPipelineEntry* pl__get_pipelines               (plVulkanDrawConte
 void
 pl_initialize_vulkan(const plVulkanInit* ptInit)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawContext = malloc(sizeof(plVulkanDrawContext));
     memset(ptVulkanDrawContext, 0, sizeof(plVulkanDrawContext));
     ptVulkanDrawContext->tDevice = ptInit->tLogicalDevice;
@@ -449,7 +449,7 @@ pl_initialize_vulkan(const plVulkanInit* ptInit)
 void
 pl_new_draw_frame_vulkan(void)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawContext = ptCtx->tIO.pBackendRendererData;
 
     //-----------------------------------------------------------------------------
@@ -514,7 +514,7 @@ pl_new_draw_frame_vulkan(void)
 void
 pl_cleanup_vulkan_font_texture(plFontAtlas* ptAtlas)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawContext = ptCtx->tIO.pBackendRendererData;
     const plTextureReturn tReturnTexture = {
         .tImage        = ptVulkanDrawContext->tFontTextureImage,
@@ -529,7 +529,7 @@ pl_cleanup_vulkan_font_texture(plFontAtlas* ptAtlas)
 void
 pl_submit_vulkan_drawlist(plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
     pl_submit_vulkan_drawlist_ex(ptDrawlist, fWidth, fHeight, tCmdBuf, uFrameIndex, ptVulkanDrawCtx->tRenderPass, ptVulkanDrawCtx->tMSAASampleCount);
 }
@@ -537,16 +537,16 @@ pl_submit_vulkan_drawlist(plDrawList* ptDrawlist, float fWidth, float fHeight, V
 void
 pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount)
 {
-    if(plu_sb_size(ptDrawlist->sbVertexBuffer) == 0u)
+    if(plu_sb_size(ptDrawlist->sbtVertexBuffer) == 0u)
         return;
 
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~vertex buffer prep~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // ensure gpu vertex buffer size is adequate
-    const uint32_t uVtxBufSzNeeded = sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbVertexBuffer);
+    const uint32_t uVtxBufSzNeeded = sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbtVertexBuffer);
     if(uVtxBufSzNeeded == 0)
         return;
 
@@ -561,12 +561,12 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
 
     // vertex GPU data transfer
     unsigned char* pucMappedVertexBufferLocation = tBufferInfo->ucVertexBufferMap;
-    memcpy(&pucMappedVertexBufferLocation[tBufferInfo->uVertexBufferOffset], ptDrawlist->sbVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbVertexBuffer));
+    memcpy(&pucMappedVertexBufferLocation[tBufferInfo->uVertexBufferOffset], ptDrawlist->sbtVertexBuffer, sizeof(plDrawVertex) * plu_sb_size(ptDrawlist->sbtVertexBuffer));
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~index buffer prep~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // ensure gpu index buffer size is adequate
-    const uint32_t uIdxBufSzNeeded = ptDrawlist->indexBufferByteSize;
+    const uint32_t uIdxBufSzNeeded = ptDrawlist->uIndexBufferByteSize;
     if(uIdxBufSzNeeded == 0)
         return;
 
@@ -583,27 +583,27 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
     uint32_t uTempIndexBufferOffset = 0u;
     uint32_t globalIdxBufferIndexOffset = 0u;
 
-    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbSubmittedLayers); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbtSubmittedLayers); i++)
     {
         plDrawCommand* ptLastCommand = NULL;
-        plDrawLayer* ptLayer = ptDrawlist->sbSubmittedLayers[i];
+        plDrawLayer* ptLayer = ptDrawlist->sbtSubmittedLayers[i];
 
-        memcpy(&pucDestination[uTempIndexBufferOffset], ptLayer->sbIndexBuffer, sizeof(uint32_t) * plu_sb_size(ptLayer->sbIndexBuffer));
+        memcpy(&pucDestination[uTempIndexBufferOffset], ptLayer->sbuIndexBuffer, sizeof(uint32_t) * plu_sb_size(ptLayer->sbuIndexBuffer));
 
-        uTempIndexBufferOffset += plu_sb_size(ptLayer->sbIndexBuffer)*sizeof(uint32_t);
+        uTempIndexBufferOffset += plu_sb_size(ptLayer->sbuIndexBuffer)*sizeof(uint32_t);
 
         // attempt to merge commands
-        for(uint32_t j = 0u; j < plu_sb_size(ptLayer->sbCommandBuffer); j++)
+        for(uint32_t j = 0u; j < plu_sb_size(ptLayer->sbtCommandBuffer); j++)
         {
-            plDrawCommand* ptLayerCommand = &ptLayer->sbCommandBuffer[j];
+            plDrawCommand* ptLayerCommand = &ptLayer->sbtCommandBuffer[j];
             bool bCreateNewCommand = true;
 
             if(ptLastCommand)
             {
                 // check for same texture (allows merging draw calls)
-                if(ptLastCommand->textureId == ptLayerCommand->textureId && ptLastCommand->sdf == ptLayerCommand->sdf)
+                if(ptLastCommand->tTextureId == ptLayerCommand->tTextureId && ptLastCommand->bSdf == ptLayerCommand->bSdf)
                 {
-                    ptLastCommand->elementCount += ptLayerCommand->elementCount;
+                    ptLastCommand->uElementCount += ptLayerCommand->uElementCount;
                     bCreateNewCommand = false;
                 }
 
@@ -618,13 +618,13 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
 
             if(bCreateNewCommand)
             {
-                ptLayerCommand->indexOffset = globalIdxBufferIndexOffset + ptLayerCommand->indexOffset;
-                plu_sb_push(ptDrawlist->sbDrawCommands, *ptLayerCommand);       
+                ptLayerCommand->uIndexOffset = globalIdxBufferIndexOffset + ptLayerCommand->uIndexOffset;
+                plu_sb_push(ptDrawlist->sbtDrawCommands, *ptLayerCommand);       
                 ptLastCommand = ptLayerCommand;
             }
             
         }    
-        globalIdxBufferIndexOffset += plu_sb_size(ptLayer->sbIndexBuffer);    
+        globalIdxBufferIndexOffset += plu_sb_size(ptLayer->sbuIndexBuffer);    
     }
 
     const VkMappedMemoryRange aRange[2] = {
@@ -655,16 +655,16 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
     const float fTranslate[] = {-1.0f, -1.0f};
     bool bSdf = false;
     vkCmdBindPipeline(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, tPipelineEntry->tRegularPipeline); 
-    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbDrawCommands); i++)
+    for(uint32_t i = 0u; i < plu_sb_size(ptDrawlist->sbtDrawCommands); i++)
     {
-        plDrawCommand cmd = ptDrawlist->sbDrawCommands[i];
+        plDrawCommand cmd = ptDrawlist->sbtDrawCommands[i];
 
-        if(cmd.sdf && !bSdf)
+        if(cmd.bSdf && !bSdf)
         {
             vkCmdBindPipeline(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, tPipelineEntry->tSecondaryPipeline); 
             bSdf = true;
         }
-        else if(!cmd.sdf && bSdf)
+        else if(!cmd.bSdf && bSdf)
         {
             vkCmdBindPipeline(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, tPipelineEntry->tRegularPipeline); 
             bSdf = false;
@@ -703,10 +703,10 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
             vkCmdSetScissor(tCmdBuf, 0, 1, &tScissor);
         }
 
-        vkCmdBindDescriptorSets(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, ptVulkanDrawCtx->tPipelineLayout, 0, 1, (const VkDescriptorSet*)&cmd.textureId, 0u, NULL);
+        vkCmdBindDescriptorSets(tCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, ptVulkanDrawCtx->tPipelineLayout, 0, 1, (const VkDescriptorSet*)&cmd.tTextureId, 0u, NULL);
         vkCmdPushConstants(tCmdBuf, ptVulkanDrawCtx->tPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(float) * 0, sizeof(float) * 2, fScale);
         vkCmdPushConstants(tCmdBuf, ptVulkanDrawCtx->tPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(float) * 2, sizeof(float) * 2, fTranslate);
-        vkCmdDrawIndexed(tCmdBuf, cmd.elementCount, 1, cmd.indexOffset + iIndexOffset, iVertexOffset, 0);
+        vkCmdDrawIndexed(tCmdBuf, cmd.uElementCount, 1, cmd.uIndexOffset + iIndexOffset, iVertexOffset, 0);
     }
 
     // bump vertex & index buffer offset
@@ -717,7 +717,7 @@ pl_submit_vulkan_drawlist_ex(plDrawList* ptDrawlist, float fWidth, float fHeight
 void
 pl_cleanup_vulkan(void)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
 
     vkDeviceWaitIdle(ptVulkanDrawCtx->tDevice);
@@ -780,7 +780,7 @@ pl_cleanup_vulkan(void)
 VkDescriptorSet
 pl_add_texture(VkImageView tImageView, VkImageLayout tImageLayout)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
 
     VkDescriptorSet tDescriptorSet = {0};
@@ -815,7 +815,7 @@ pl_add_texture(VkImageView tImageView, VkImageLayout tImageLayout)
 void
 pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
 
@@ -824,8 +824,8 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
     const VkImageCreateInfo tImageInfo = {
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType     = VK_IMAGE_TYPE_2D,
-        .extent.width  = ptAtlas->atlasSize[0],
-        .extent.height = ptAtlas->atlasSize[1],
+        .extent.width  = ptAtlas->auAtlasSize[0],
+        .extent.height = ptAtlas->auAtlasSize[1],
         .extent.depth  = 1u,
         .mipLevels     = 1u,
         .arrayLayers   = 1u,
@@ -851,7 +851,7 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
     PL_VULKAN(vkBindImageMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tFontTextureImage, ptVulkanDrawCtx->tFontTextureMemory, 0));
 
     // upload data
-    uint32_t uDataSize = ptAtlas->atlasSize[0] * ptAtlas->atlasSize[1] * 4u;
+    uint32_t uDataSize = ptAtlas->auAtlasSize[0] * ptAtlas->auAtlasSize[1] * 4u;
     if(uDataSize > ptVulkanDrawCtx->szStageByteSize)
     {
         if(ptVulkanDrawCtx->tStagingMemory)
@@ -884,7 +884,7 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
         PL_VULKAN(vkBindBufferMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tStagingBuffer, ptVulkanDrawCtx->tStagingMemory, 0));   
         PL_VULKAN(vkMapMemory(ptVulkanDrawCtx->tDevice, ptVulkanDrawCtx->tStagingMemory, 0, VK_WHOLE_SIZE, 0, &ptVulkanDrawCtx->pStageMapping));
     }
-    memcpy(ptVulkanDrawCtx->pStageMapping, ptAtlas->pixelsAsRGBA32, uDataSize);
+    memcpy(ptVulkanDrawCtx->pStageMapping, ptAtlas->pucPixelsAsRGBA32, uDataSize);
 
     const VkMappedMemoryRange tRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -942,8 +942,8 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
         },
         .imageOffset = {0},
         .imageExtent = {
-            .width  = ptAtlas->atlasSize[0], 
-            .height = ptAtlas->atlasSize[1],
+            .width  = ptAtlas->auAtlasSize[0], 
+            .height = ptAtlas->auAtlasSize[1],
             .depth  = 1
         }
     };
@@ -988,7 +988,7 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
     };
     PL_VULKAN(vkCreateImageView(ptVulkanDrawCtx->tDevice, &tViewInfo, NULL, &ptVulkanDrawCtx->tFontTextureImageView));
 
-    ptCtx->fontAtlas->texture = pl_add_texture(ptVulkanDrawCtx->tFontTextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    ptCtx->fontAtlas->tTexture = pl_add_texture(ptVulkanDrawCtx->tFontTextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 //-----------------------------------------------------------------------------
@@ -1009,7 +1009,7 @@ pl__find_memory_type(VkPhysicalDeviceMemoryProperties tMemProps, uint32_t uTypeF
 static void
 pl__grow_vulkan_vertex_buffer(uint32_t uVtxBufSzNeeded, plVulkanBufferInfo* ptBufferInfo)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
     // plVulkanBufferInfo* ptBufferInfo = &ptVulkanDrawCtx->sbtBufferInfo[uFrameIndex];
 
@@ -1058,7 +1058,7 @@ pl__grow_vulkan_vertex_buffer(uint32_t uVtxBufSzNeeded, plVulkanBufferInfo* ptBu
 static void
 pl__grow_vulkan_index_buffer(uint32_t uIdxBufSzNeeded, plVulkanBufferInfo* ptBufferInfo)
 {
-    plUiContext* ptCtx = pl_get_ui_context();
+    plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
 
     // buffer currently exists & mapped, submit for cleanup

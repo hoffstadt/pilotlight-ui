@@ -38,22 +38,20 @@ extern "C" {
 // [SECTION] forward declarations
 //-----------------------------------------------------------------------------
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~structs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // basic types
-typedef struct _plUiContext  plUiContext; // (opaque structure)
-typedef struct _plUiClipper  plUiClipper;
-typedef struct _plIO         plIO;
-typedef struct _plInputEvent plInputEvent;
-typedef struct _plKeyData    plKeyData;
+typedef struct _plIO         plIO;         // configuration & IO between app & pilotlight ui
+typedef struct _plUiContext  plUiContext;  // (opaque structure)
+typedef struct _plUiClipper  plUiClipper;  // data used with "pl_step_clipper(...)" function (see function)
+typedef struct _plKeyData    plKeyData;    // individual key status (down, down duration, etc.)
+typedef struct _plInputEvent plInputEvent; // holds data for input events (opaque structure)
 
-// drawing
+// drawing types
 typedef struct _plDrawLayer   plDrawLayer;   // layer for out of order drawing(opaque structure)
 typedef struct _plDrawVertex  plDrawVertex;  // single vertex (2D pos + uv + color)
 typedef struct _plDrawList    plDrawList;    // collection of draw layers for a specific target (opaque structure)
 typedef struct _plDrawCommand plDrawCommand; // single draw call (opaque structure)
 
-// fonts
+// font types
 typedef struct _plFontChar       plFontChar;       // internal for now (opaque structure)
 typedef struct _plFontGlyph      plFontGlyph;      // internal for now (opaque structure)
 typedef struct _plFontCustomRect plFontCustomRect; // internal for now (opaque structure)
@@ -74,31 +72,29 @@ typedef union  _plVec2 plVec2;
 typedef union  _plVec4 plVec4;
 typedef struct _plRect plRect;
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~flags & enums~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // flags
 typedef int plKeyChord;
 
 // enums
-typedef int plUiConditionFlags;
-typedef int plUiLayoutRowType;
-typedef int plUiInputTextFlags;
-typedef int plKey;
-typedef int plMouseButton;
-typedef int plCursor;
-typedef int plInputEventType;
-typedef int plInputEventSource;
+typedef int plUiConditionFlags; // -> enum plUiConditionFlags_ // Enum: A conditional for some functions (PL_UI_COND_XXX value)
+typedef int plUiLayoutRowType;  // -> enum plUiLayoutRowType_  // Enum: A row type for the layout system (PL_UI_LAYOUT_ROW_TYPE_XXX)
+typedef int plUiInputTextFlags; // -> enum plUiInputTextFlags_ // Enum: Internal flags for input text (PL_UI_INPUT_TEXT_FLAGS_XXX)
+typedef int plKey;              // -> enum plKey_              // Enum: A key identifier (PL_KEY_XXX or PL_KEY_MOD_XXX value)
+typedef int plMouseButton;      // -> enum plMouseButton_      // Enum: A mouse button identifier (PL_MOUSE_BUTTON_XXX)
+typedef int plMouseCursor;      // -> enum plMouseCursor_      // Enum: Mouse cursor shape (PL_MOUSE_CURSOR_XXX)
+typedef int plInputEventType;   // -> enum plInputEventType_   // Enum: An input event type (PL_INPUT_EVENT_TYPE_XXX)
+typedef int plInputEventSource; // -> enum plInputEventSource_ // Enum: An input event source (PL_INPUT_EVENT_SOURCE_XXX)
 
 //-----------------------------------------------------------------------------
 // [SECTION] public api
 //-----------------------------------------------------------------------------
 
 // context creation & access
-plUiContext*   pl_create_ui_context (void);
-void           pl_destroy_ui_context(void);
-void           pl_set_ui_context    (plUiContext* ptCtx); // must be set when crossing DLL boundary
-plUiContext*   pl_get_ui_context    (void);
-plIO*          pl_get_io            (void);
+plUiContext*   pl_create_context (void);
+void           pl_destroy_context(void);
+void           pl_set_context    (plUiContext* ptCtx); // must be set when crossing DLL boundary
+plUiContext*   pl_get_context    (void);
+plIO*          pl_get_io         (void);
 
 // render data
 plDrawList*    pl_get_draw_list      (plUiContext* ptContext);
@@ -106,7 +102,7 @@ plDrawList*    pl_get_debug_draw_list(plUiContext* ptContext);
 
 // main
 void           pl_new_frame(void); // start a new pilotlight ui frame, this should be the first command before calling any commands below
-void           pl_end_frame(void); // ends pilotlight ui frame, automatically called by pl_ui_render()
+void           pl_end_frame(void); // ends pilotlight ui frame, automatically called by pl_render()
 void           pl_render   (void); // submits draw layers, you can then submit the ptDrawlist & ptDebugDrawlist from context
 
 // tools
@@ -124,31 +120,31 @@ plFont*        pl_get_default_font(void);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~windows~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // windows
-// - only call "pl_ui_end_window()" if "pl_ui_begin_window()" returns true (its call automatically if false)
+// - only call "pl_end_window()" if "pl_begin_window()" returns true (its call automatically if false)
 // - passing a valid pointer to pbOpen will show a red circle that will turn pbOpen false when clicked
-// - "pl_ui_end_window()" will return false if collapsed or clipped
+// - "pl_end_window()" will return false if collapsed or clipped
 // - if you use autosize, make sure at least 1 row has a static component (or the window will grow unbounded)
 bool           pl_begin_window(const char* pcName, bool* pbOpen, bool bAutoSize);
 void           pl_end_window  (void);
 
 // window utilities
-plDrawLayer*   pl_get_window_fg_drawlayer(void); // returns current window foreground drawlist (call between pl_ui_begin_window(...) & pl_ui_end_window(...))
-plDrawLayer*   pl_get_window_bg_drawlayer(void); // returns current window background drawlist (call between pl_ui_begin_window(...) & pl_ui_end_window(...))
+plDrawLayer*   pl_get_window_fg_drawlayer(void); // returns current window foreground drawlist (call between pl_begin_window(...) & pl_end_window(...))
+plDrawLayer*   pl_get_window_bg_drawlayer(void); // returns current window background drawlist (call between pl_begin_window(...) & pl_end_window(...))
 plVec2         pl_get_cursor_pos         (void); // returns current cursor position (where the next widget will start drawing)
 
 // child windows
-// - only call "pl_ui_end_child()" if "pl_ui_begin_child()" returns true (its call automatically if false)
+// - only call "pl_end_child()" if "pl_begin_child()" returns true (its call automatically if false)
 // - self-contained window with scrolling & clipping
 bool           pl_begin_child(const char* pcName);
 void           pl_end_child  (void);
 
 // tooltips
-// - window that follows the mouse (usually used in combination with "pl_ui_was_last_item_hovered()")
+// - window that follows the mouse (usually used in combination with "pl_was_last_item_hovered()")
 void           pl_begin_tooltip(void);
 void           pl_end_tooltip  (void);
 
 // window utilities
-// - refers to current window (between "pl_ui_begin_window()" & "pl_ui_end_window()")
+// - refers to current window (between "pl_begin_window()" & "pl_end_window()")
 plVec2         pl_get_window_pos       (void);
 plVec2         pl_get_window_size      (void);
 plVec2         pl_get_window_scroll    (void);
@@ -156,7 +152,7 @@ plVec2         pl_get_window_scroll_max(void);
 void           pl_set_window_scroll    (plVec2 tScroll);
 
 // window manipulation
-// - call before "pl_ui_begin_window()"
+// - call before "pl_begin_window()"
 void           pl_set_next_window_pos     (plVec2 tPos, plUiConditionFlags tCondition);
 void           pl_set_next_window_size    (plVec2 tSize, plUiConditionFlags tCondition);
 void           pl_set_next_window_collapse(bool bCollapsed, plUiConditionFlags tCondition);
@@ -201,8 +197,8 @@ bool           pl_drag_float  (const char* pcLabel, float* pfValue, float fSpeed
 bool           pl_drag_float_f(const char* pcLabel, float* pfValue, float fSpeed, float fMin, float fMax, const char* pcFormat);
 
 // trees
-// - only call "pl_ui_tree_pop()" if "pl_ui_tree_node()" returns true (its call automatically if false)
-// - only call "pl_ui_end_collapsing_header()" if "pl_ui_collapsing_header()" returns true (its call automatically if false)
+// - only call "pl_tree_pop()" if "pl_tree_node()" returns true (its call automatically if false)
+// - only call "pl_end_collapsing_header()" if "pl_collapsing_header()" returns true (its call automatically if false)
 bool           pl_collapsing_header    (const char* pcText);
 void           pl_end_collapsing_header(void);
 bool           pl_tree_node            (const char* pcText);
@@ -211,8 +207,8 @@ bool           pl_tree_node_v          (const char* pcFmt, va_list args);
 void           pl_tree_pop             (void);
 
 // tabs & tab bars
-// - only call "pl_ui_end_tab_bar()" if "pl_ui_begin_tab_bar()" returns true (its call automatically if false)
-// - only call "pl_ui_end_tab()" if "pl_ui_begin_tab()" returns true (its call automatically if false)
+// - only call "pl_end_tab_bar()" if "pl_begin_tab_bar()" returns true (its call automatically if false)
+// - only call "pl_end_tab()" if "pl_begin_tab()" returns true (its call automatically if false)
 bool           pl_begin_tab_bar(const char* pcText);
 void           pl_end_tab_bar  (void);
 bool           pl_begin_tab    (const char* pcText);
@@ -225,6 +221,7 @@ void           pl_indent          (float fIndent);
 void           pl_unindent        (float fIndent);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~clipper~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // - clipper based on "Dear ImGui"'s ImGuiListClipper (https://github.com/ocornut/imgui)
 // - Used for large numbers of evenly spaced rows.
 // - Without Clipper:
@@ -280,8 +277,8 @@ void           pl_layout_template_end          (void);
 // layout system 6
 // - allows user to place widgets freely
 // - if tType=PL_UI_LAYOUT_ROW_TYPE_STATIC, then fWidth/fHeight is pixel width/height
-// - if tType=PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, then fWidth/fHeight is a ratio of the available width/height (for pl_ui_layout_space_begin())
-// - if tType=PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, then fWidth is a ratio of the available width & fHeight is a ratio of fHeight given to "pl_ui_layout_space_begin()" (for pl_ui_layout_space_push())
+// - if tType=PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, then fWidth/fHeight is a ratio of the available width/height (for pl_layout_space_begin())
+// - if tType=PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, then fWidth is a ratio of the available width & fHeight is a ratio of fHeight given to "pl_layout_space_begin()" (for pl_layout_space_push())
 void          pl_layout_space_begin(plUiLayoutRowType tType, float fHeight, uint32_t uWidgetCount);
 void          pl_layout_space_push (float fX, float fY, float fWidth, float fHeight);
 void          pl_layout_space_end  (void);
@@ -311,7 +308,7 @@ plVec2       pl_get_mouse_drag_delta   (plMouseButton tButton, float fThreshold)
 plVec2       pl_get_mouse_pos          (void);
 float        pl_get_mouse_wheel        (void);
 bool         pl_is_mouse_pos_valid     (plVec2 tPos);
-void         pl_set_mouse_cursor       (plCursor tCursor);
+void         pl_set_mouse_cursor       (plMouseCursor tCursor);
 
 // input functions
 plKeyData*   pl_get_key_data          (plKey tKey);
@@ -322,18 +319,17 @@ void         pl_add_text_events_utf8  (const char* pcText);
 void         pl_add_mouse_pos_event   (float fX, float fY);
 void         pl_add_mouse_button_event(int iButton, bool bDown);
 void         pl_add_mouse_wheel_event (float fX, float fY);
-
 void         pl_clear_input_characters(void);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~drawing~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // setup
-void         pl_register_drawlist   (plDrawList* ptDrawlist);
-plDrawLayer* pl_request_layer       (plDrawList* ptDrawlist, const char* pcName);
-void         pl_return_layer        (plDrawLayer* ptLayer);
+void pl_register_drawlist(plDrawList* ptDrawlist);
 
-// per frame
-void pl_submit_layer(plDrawLayer* ptLayer);
+// layers
+void         pl_submit_layer (plDrawLayer* ptLayer);
+plDrawLayer* pl_request_layer(plDrawList* ptDrawlist, const char* pcName);
+void         pl_return_layer (plDrawLayer* ptLayer);
 
 // drawing
 void pl_add_line               (plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec4 tColor, float fThickness);
@@ -358,15 +354,15 @@ void pl_add_bezier_quad        (plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, pl
 void pl_add_bezier_cubic       (plDrawLayer* ptLayer, plVec2 tP0, plVec2 tP1, plVec2 tP2, plVec2 tP3, plVec4 tColor, float fThickness, uint32_t uSegments);
 
 // fonts
-void   pl_build_font_atlas        (plFontAtlas* ptAtlas);
-void   pl_cleanup_font_atlas      (plFontAtlas* ptAtlas);
-void   pl_add_default_font        (plFontAtlas* ptAtlas);
-void   pl_add_font_from_file_ttf  (plFontAtlas* ptAtlas, plFontConfig tConfig, const char* pcFile);
-void   pl_add_font_from_memory_ttf(plFontAtlas* ptAtlas, plFontConfig tConfig, void* pData);
-plVec2 pl_calculate_text_size     (plFont* ptFont, float fSize, const char* pcText, float fWrap);
-plVec2 pl_calculate_text_size_ex  (plFont* ptFont, float fSize, const char* pcText, const char* pcTextEnd, float fWrap);
-plRect pl_calculate_text_bb       (plFont* ptFont, float fSize, plVec2 tP, const char* pcText, float fWrap);
-plRect pl_calculate_text_bb_ex    (plFont* ptFont, float fSize, plVec2 tP, const char* pcText, const char* pcTextEnd, float fWrap);
+void          pl_build_font_atlas        (plFontAtlas* ptAtlas);
+void          pl_cleanup_font_atlas      (plFontAtlas* ptAtlas);
+void          pl_add_default_font        (plFontAtlas* ptAtlas);
+void          pl_add_font_from_file_ttf  (plFontAtlas* ptAtlas, plFontConfig tConfig, const char* pcFile);
+void          pl_add_font_from_memory_ttf(plFontAtlas* ptAtlas, plFontConfig tConfig, void* pData);
+plVec2        pl_calculate_text_size     (plFont* ptFont, float fSize, const char* pcText, float fWrap);
+plVec2        pl_calculate_text_size_ex  (plFont* ptFont, float fSize, const char* pcText, const char* pcTextEnd, float fWrap);
+plRect        pl_calculate_text_bb       (plFont* ptFont, float fSize, plVec2 tP, const char* pcText, float fWrap);
+plRect        pl_calculate_text_bb_ex    (plFont* ptFont, float fSize, plVec2 tP, const char* pcText, const char* pcTextEnd, float fWrap);
 
 // clipping
 void          pl_push_clip_rect_pt(plDrawList* ptDrawlist, const plRect* ptRect);
@@ -391,7 +387,6 @@ enum plUiLayoutRowType_
     PL_UI_LAYOUT_ROW_TYPE_DYNAMIC,
     PL_UI_LAYOUT_ROW_TYPE_STATIC
 };
-
 
 enum plMouseButton_
 {
@@ -474,7 +469,7 @@ enum plKey_
     PL_KEY_MOD_MASK_    = 0xF800   // 5 bits
 };
 
-enum plCursor_
+enum plMouseCursor_
 {
     PL_MOUSE_CURSOR_NONE  = -1,
     PL_MOUSE_CURSOR_ARROW =  0,
@@ -582,147 +577,106 @@ typedef struct _plKeyData
     float fDownDurationPrev;
 } plKeyData;
 
-typedef struct _plInputEvent
-{
-    plInputEventType   tType;
-    plInputEventSource tSource;
-
-    union
-    {
-        struct // mouse pos event
-        {
-            float fPosX;
-            float fPosY;
-        };
-
-        struct // mouse wheel event
-        {
-            float fWheelX;
-            float fWheelY;
-        };
-        
-        struct // mouse button event
-        {
-            int  iButton;
-            bool bMouseDown;
-        };
-
-        struct // key event
-        {
-            plKey tKey;
-            bool  bKeyDown;
-        };
-
-        struct // text event
-        {
-            uint32_t uChar;
-        };
-        
-    };
-
-} plInputEvent;
-
 typedef struct _plDrawVertex
 {
-    float    pos[2];
-    float    uv[2];
+    float    afPos[2];
+    float    afUv[2];
     uint32_t uColor;
 } plDrawVertex;
 
 typedef struct _plFontRange
 {
-    int         firstCodePoint;
-    uint32_t    charCount;
-    plFontChar* ptrFontChar; // offset into parent font's char data
+    int         iFirstCodePoint;
+    uint32_t    uCharCount;
+    plFontChar* ptFontChar; // offset into parent font's char data
 } plFontRange;
 
 typedef struct _plFontConfig
 {
-    float        fontSize;
-    plFontRange* sbRanges;
-    int*         sbIndividualChars;
+    float        fFontSize;
+    plFontRange* sbtRanges;
+    int*         sbiIndividualChars;
 
     // BITMAP
-    uint32_t vOverSampling;
-    uint32_t hOverSampling;
+    uint32_t uVOverSampling;
+    uint32_t uHOverSampling;
 
     // SDF
-    bool          sdf;
-    int           sdfPadding;
-    unsigned char onEdgeValue;
-    float         sdfPixelDistScale;
+    bool          bSdf;
+    int           iSdfPadding;
+    unsigned char ucOnEdgeValue;
+    float         fSdfPixelDistScale;
 } plFontConfig;
 
 typedef struct _plFont
 {
-    plFontConfig config;
-    plFontAtlas* parentAtlas;
-    float        lineSpacing;
-    float        ascent;
-    float        descent;
+    plFontConfig tConfig;
+    plFontAtlas* ptParentAtlas;
+    float        fLineSpacing;
+    float        fAscent;
+    float        fDescent;
     
-    uint32_t*    sbCodePoints; // glyph index lookup based on codepoint
-    plFontGlyph* sbGlyphs;     // glyphs
-    plFontChar*  sbCharData;
+    uint32_t*    sbuCodePoints; // glyph index lookup based on codepoint
+    plFontGlyph* sbtGlyphs;     // glyphs
+    plFontChar*  sbtCharData;
 } plFont;
 
 typedef struct _plFontAtlas
 {
-    plFont*           sbFonts;
-    plFontCustomRect* sbCustomRects;
-    unsigned char*    pixelsAsAlpha8;
-    unsigned char*    pixelsAsRGBA32;
-    uint32_t          atlasSize[2];
-    float             whiteUv[2];
-    bool              dirty;
-    int               glyphPadding;
-    size_t            pixelDataSize;
-    plFontCustomRect* whiteRect;
-    plTextureId       texture;
-    plFontPrepData*   _sbPrepData;
+    plFont*           sbtFonts;
+    plFontCustomRect* sbtCustomRects;
+    unsigned char*    pucPixelsAsAlpha8;
+    unsigned char*    pucPixelsAsRGBA32;
+    uint32_t          auAtlasSize[2];
+    float             afWhiteUv[2];
+    bool              bDirty;
+    int               iGlyphPadding;
+    size_t            szPixelDataSize;
+    plFontCustomRect* ptWhiteRect;
+    plTextureId       tTexture;
+    plFontPrepData*   _sbtPrepData;
 } plFontAtlas;
 
 typedef struct _plDrawList
 {
-    plDrawLayer**  sbSubmittedLayers;
-    plDrawLayer**  sbLayerCache;
-    plDrawLayer**  sbLayersCreated;
-    plDrawCommand* sbDrawCommands;
-    plDrawVertex*  sbVertexBuffer;
-    uint32_t       indexBufferByteSize;
-    uint32_t       layersCreated;
-    plRect*        sbClipStack;
+    plDrawLayer**  sbtSubmittedLayers;
+    plDrawLayer**  sbtLayerCache;
+    plDrawLayer**  sbtLayersCreated;
+    plDrawCommand* sbtDrawCommands;
+    plDrawVertex*  sbtVertexBuffer;
+    uint32_t       uIndexBufferByteSize;
+    uint32_t       uLayersCreated;
+    plRect*        sbtClipStack;
 } plDrawList;
 
 typedef struct _plFontCustomRect
 {
-    uint32_t       width;
-    uint32_t       height;
-    uint32_t       x;
-    uint32_t       y;
-    unsigned char* bytes;
+    uint32_t       uWidth;
+    uint32_t       uHeight;
+    uint32_t       uX;
+    uint32_t       uY;
+    unsigned char* pucBytes;
 } plFontCustomRect;
 
 typedef struct _plDrawCommand
 {
-    uint32_t    vertexOffset;
-    uint32_t    indexOffset;
-    uint32_t    elementCount;
-    uint32_t    layer;
-    plTextureId textureId;
+    uint32_t    uVertexOffset;
+    uint32_t    uIndexOffset;
+    uint32_t    uElementCount;
+    plTextureId tTextureId;
     plRect      tClip;
-    bool        sdf;
+    bool        bSdf;
 } plDrawCommand;
 
 typedef struct _plDrawLayer
 {
-    const char*     name;
-    plDrawList*     drawlist;
-    plDrawCommand*  sbCommandBuffer;
-    uint32_t*       sbIndexBuffer;
-    plVec2*         sbPath;
-    uint32_t        vertexCount;
-    plDrawCommand*  _lastCommand;
+    const char*     pcName;
+    plDrawList*     ptDrawlist;
+    plDrawCommand*  sbtCommandBuffer;
+    uint32_t*       sbuIndexBuffer;
+    plVec2*         sbtPath;
+    uint32_t        uVertexCount;
+    plDrawCommand*  _ptLastCommand;
 } plDrawLayer;
 
 typedef struct _plFontChar
@@ -795,8 +749,7 @@ typedef struct _plIO
     bool     bViewportSizeChanged;
     bool     bViewportMinimized;
     uint64_t ulFrameCount;
-
-    // new
+    
     plKeyChord tKeyMods;
     bool       bWantCaptureMouse;
     bool       bWantCaptureKeyboard;
@@ -807,14 +760,9 @@ typedef struct _plIO
     bool       bKeySuper; // Keyboard modifier down: Cmd/Super/Windows
 
     // [INTERNAL]
-    bool          _bOverflowInUse;
-    plInputEvent  _atInputEvents[64];
     plInputEvent* _sbtInputEvents;
-    uint32_t      _uInputEventSize;
-    uint32_t      _uInputEventCapacity;
-    uint32_t      _uInputEventOverflowCapacity;
-    plUiWChar*      _sbInputQueueCharacters;
-    plUiWChar       _tInputQueueSurrogate; 
+    plUiWChar*    _sbInputQueueCharacters;
+    plUiWChar     _tInputQueueSurrogate; 
 
     // main input state
     plVec2 _tMousePos;
@@ -824,8 +772,8 @@ typedef struct _plIO
     float  _fMouseWheelH;
 
     // mouse cursor
-    plCursor tCurrentCursor;
-    plCursor tNextCursor;
+    plMouseCursor tCurrentCursor;
+    plMouseCursor tNextCursor;
     bool     bCursorChanged;
 
     // other state

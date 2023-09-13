@@ -56,12 +56,12 @@ pl_debug(bool* pbOpen)
                     
                     if(pl_tree_node("Draw Layers"))
                     {
-                        if(pl_tree_node_f("Foreground %d vtx, %d indices, %d cmds", ptWindow->ptFgLayer->vertexCount, plu_sb_size(ptWindow->ptFgLayer->sbIndexBuffer), plu_sb_size(ptWindow->ptFgLayer->sbCommandBuffer)))
+                        if(pl_tree_node_f("Foreground %d vtx, %d indices, %d cmds", ptWindow->ptFgLayer->uVertexCount, plu_sb_size(ptWindow->ptFgLayer->sbuIndexBuffer), plu_sb_size(ptWindow->ptFgLayer->sbtCommandBuffer)))
                         {
-                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptFgLayer->sbCommandBuffer); i++)
+                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptFgLayer->sbtCommandBuffer); i++)
                             {
-                                const plDrawCommand* ptDrawCmd = &ptWindow->ptFgLayer->sbCommandBuffer[i];
-                                if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->elementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))
+                                const plDrawCommand* ptDrawCmd = &ptWindow->ptFgLayer->sbtCommandBuffer[i];
+                                if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->uElementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))
                                 {
                                     if(pl_was_last_item_hovered())
                                         pl_add_rect(gptCtx->ptFgLayer, ptDrawCmd->tClip.tMin, ptDrawCmd->tClip.tMax, (plVec4){1.0f, 1.0f, 0.0f, 1.0f}, 1.0f);
@@ -76,12 +76,12 @@ pl_debug(bool* pbOpen)
                             
                             pl_tree_pop(); 
                         }
-                        if(pl_tree_node_f("Background %d vtx, %d indices, %d cmds", ptWindow->ptBgLayer->vertexCount, plu_sb_size(ptWindow->ptBgLayer->sbIndexBuffer), plu_sb_size(ptWindow->ptBgLayer->sbCommandBuffer)))
+                        if(pl_tree_node_f("Background %d vtx, %d indices, %d cmds", ptWindow->ptBgLayer->uVertexCount, plu_sb_size(ptWindow->ptBgLayer->sbuIndexBuffer), plu_sb_size(ptWindow->ptBgLayer->sbtCommandBuffer)))
                         {
-                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptBgLayer->sbCommandBuffer); i++)
+                            for(uint32_t i = 0; i < plu_sb_size(ptWindow->ptBgLayer->sbtCommandBuffer); i++)
                             {
-                                const plDrawCommand* ptDrawCmd = &ptWindow->ptBgLayer->sbCommandBuffer[i];
-                                if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->elementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))
+                                const plDrawCommand* ptDrawCmd = &ptWindow->ptBgLayer->sbtCommandBuffer[i];
+                                if(pl_tree_node_f("Cmd: %d tris, ClipRect(%0.1f, %0.1f)-(%0.1f, %0.1f)", ptDrawCmd->uElementCount / 3, ptDrawCmd->tClip.tMin.x, ptDrawCmd->tClip.tMin.y, ptDrawCmd->tClip.tMax.x, ptDrawCmd->tClip.tMax.y))
                                 {
                                     if(pl_was_last_item_hovered())
                                         pl_add_rect(gptCtx->ptFgLayer, ptDrawCmd->tClip.tMin, ptDrawCmd->tClip.tMax, (plVec4){1.0f, 1.0f, 0.0f, 1.0f}, 1.0f);

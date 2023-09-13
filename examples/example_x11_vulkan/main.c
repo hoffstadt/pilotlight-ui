@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 {
 
     // os provided apis
-    gptUiCtx = pl_create_ui_context();
+    gptUiCtx = pl_create_context();
 
     // setup & retrieve io context 
     gtIO = pl_get_io();
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
     pl_add_default_font(&fontAtlas);
     pl_build_font_atlas(&fontAtlas);
     pl_create_vulkan_font_texture(&fontAtlas);
-    pl_set_default_font(&fontAtlas.sbFonts[0]);
+    pl_set_default_font(&fontAtlas.sbtFonts[0]);
 
     // main loop
     while (gRunning)
@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
 
     
     pl_cleanup_vulkan();
-    pl_destroy_ui_context();
+    pl_destroy_context();
 
     cleanup(&gtGraphics);
 
@@ -1589,7 +1589,7 @@ setup_vulkan(plGraphics* ptGraphics)
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~create surface~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     struct tPlatformData { xcb_connection_t* ptConnection; xcb_window_t tWindow;};
-    struct tPlatformData* ptPlatformData = (struct tPlatformData*)pl_get_ui_context()->tIO.pBackendPlatformData;
+    struct tPlatformData* ptPlatformData = (struct tPlatformData*)pl_get_context()->tIO.pBackendPlatformData;
     const VkXcbSurfaceCreateInfoKHR tSurfaceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
         .pNext = NULL,
@@ -1759,7 +1759,7 @@ setup_vulkan(plGraphics* ptGraphics)
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~swapchain~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ptGraphics->tSwapchain.bVSync = true;
-    create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+    create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~main renderpass~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1987,7 +1987,7 @@ begin_frame(plGraphics* ptGraphics)
     {
         if(err == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+            create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
             // recreate frame buffers
             plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
@@ -2065,7 +2065,7 @@ end_frame(plGraphics* ptGraphics)
     const VkResult tResult = vkQueuePresentKHR(ptDevice->tPresentQueue, &tPresentInfo);
     if(tResult == VK_SUBOPTIMAL_KHR || tResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+        create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
         // recreate frame buffers
         plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
@@ -2110,7 +2110,7 @@ resize(plGraphics* ptGraphics)
 
     plFrameContext* ptCurrentFrame = get_frame_resources(ptGraphics);
 
-    create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+    create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
     // recreate frame buffers
     plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);

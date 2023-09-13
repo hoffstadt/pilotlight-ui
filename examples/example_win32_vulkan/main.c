@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 {
 
     // os provided apis
-    gptUiCtx = pl_create_ui_context();
+    gptUiCtx = pl_create_context();
 
     // setup & retrieve io context 
     gtIO = pl_get_io();
@@ -230,9 +230,9 @@ int main(int argc, char *argv[])
     RECT tWr = 
     {
         .left = 0,
-        .right = 500 + tWr.left,
+        .right = 1000 + tWr.left,
         .top = 0,
-        .bottom = 500 + tWr.top
+        .bottom = 1000 + tWr.top
     };
     AdjustWindowRect(&tWr, WS_OVERLAPPEDWINDOW, FALSE);
 
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
     pl_add_default_font(&fontAtlas);
     pl_build_font_atlas(&fontAtlas);
     pl_create_vulkan_font_texture(&fontAtlas);
-    pl_set_default_font(&fontAtlas.sbFonts[0]);
+    pl_set_default_font(&fontAtlas.sbtFonts[0]);
 
     // setup info for clock
     QueryPerformanceFrequency((LARGE_INTEGER*)&ilTicksPerSecond);
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 
     
     pl_cleanup_vulkan();
-    pl_destroy_ui_context();
+    pl_destroy_context();
 
     cleanup(&gtGraphics);
 
@@ -1620,7 +1620,7 @@ setup_vulkan(plGraphics* ptGraphics)
             .pNext = NULL,
             .flags = 0,
             .hinstance = GetModuleHandle(NULL),
-            .hwnd = *(HWND*)pl_get_ui_context()->tIO.pBackendPlatformData
+            .hwnd = *(HWND*)pl_get_context()->tIO.pBackendPlatformData
         };
         PL_VULKAN(vkCreateWin32SurfaceKHR(ptGraphics->tInstance, &tSurfaceCreateInfo, NULL, &ptGraphics->tSurface));
     #elif defined(__APPLE__)
@@ -1802,7 +1802,7 @@ setup_vulkan(plGraphics* ptGraphics)
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~swapchain~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ptGraphics->tSwapchain.bVSync = true;
-    create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+    create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~main renderpass~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2030,7 +2030,7 @@ begin_frame(plGraphics* ptGraphics)
     {
         if(err == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+            create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
             // recreate frame buffers
             plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
@@ -2108,7 +2108,7 @@ end_frame(plGraphics* ptGraphics)
     const VkResult tResult = vkQueuePresentKHR(ptDevice->tPresentQueue, &tPresentInfo);
     if(tResult == VK_SUBOPTIMAL_KHR || tResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+        create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
         // recreate frame buffers
         plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);
@@ -2153,7 +2153,7 @@ resize(plGraphics* ptGraphics)
 
     plFrameContext* ptCurrentFrame = get_frame_resources(ptGraphics);
 
-    create_swapchain(ptGraphics, (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_ui_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
+    create_swapchain(ptGraphics, (uint32_t)pl_get_context()->tIO.afMainViewportSize[0], (uint32_t)pl_get_context()->tIO.afMainViewportSize[1], &ptGraphics->tSwapchain);
 
     // recreate frame buffers
     plu_sb_resize(ptGraphics->tSwapchain.sbtFrameBuffers, ptGraphics->tSwapchain.uImageCount);

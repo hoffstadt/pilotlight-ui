@@ -60,7 +60,6 @@ static void          pl__update_mouse_inputs(void);
 static void          pl__update_keyboard_inputs(void);
 static int           pl__calc_typematic_repeat_amount(float fT0, float fT1, float fRepeatDelay, float fRepeatRate);
 static plInputEvent* pl__get_last_event(plInputEventType tType, int iButtonOrKey);
-static plInputEvent* pl__get_event(void);
 
 //-----------------------------------------------------------------------------
 // [SECTION] public api implementation
@@ -89,20 +88,24 @@ pl_add_key_event(plKey tKey, bool bDown)
     if(ptLastEvent && ptLastEvent->bKeyDown == bDown)
         return;
 
-    plInputEvent* ptEvent = pl__get_event();
-    ptEvent->tType    = PL_INPUT_EVENT_TYPE_KEY;
-    ptEvent->tSource  = PL_INPUT_EVENT_SOURCE_KEYBOARD;
-    ptEvent->tKey     = tKey;
-    ptEvent->bKeyDown = bDown;
+    const plInputEvent tEvent = {
+        .tType    = PL_INPUT_EVENT_TYPE_KEY,
+        .tSource  = PL_INPUT_EVENT_SOURCE_KEYBOARD,
+        .tKey     = tKey,
+        .bKeyDown = bDown
+    };
+    plu_sb_push(gptCtx->tIO._sbtInputEvents, tEvent);
 }
 
 void
 pl_add_text_event(uint32_t uChar)
 {
-    plInputEvent* ptEvent = pl__get_event();
-    ptEvent->tType    = PL_INPUT_EVENT_TYPE_TEXT;
-    ptEvent->tSource  = PL_INPUT_EVENT_SOURCE_KEYBOARD;
-    ptEvent->uChar    = uChar;
+    const plInputEvent tEvent = {
+        .tType    = PL_INPUT_EVENT_TYPE_TEXT,
+        .tSource  = PL_INPUT_EVENT_SOURCE_KEYBOARD,
+        .uChar     = uChar
+    };
+    plu_sb_push(gptCtx->tIO._sbtInputEvents, tEvent);
 }
 
 void
@@ -156,11 +159,13 @@ pl_add_mouse_pos_event(float fX, float fY)
     if(ptLastEvent && ptLastEvent->fPosX == fX && ptLastEvent->fPosY == fY)
         return;
 
-    plInputEvent* ptEvent = pl__get_event();
-    ptEvent->tType   = PL_INPUT_EVENT_TYPE_MOUSE_POS;
-    ptEvent->tSource = PL_INPUT_EVENT_SOURCE_MOUSE;
-    ptEvent->fPosX   = fX;
-    ptEvent->fPosY   = fY;
+    const plInputEvent tEvent = {
+        .tType    = PL_INPUT_EVENT_TYPE_MOUSE_POS,
+        .tSource  = PL_INPUT_EVENT_SOURCE_MOUSE,
+        .fPosX    = fX,
+        .fPosY    = fY
+    };
+    plu_sb_push(gptCtx->tIO._sbtInputEvents, tEvent);
 }
 
 void
@@ -172,21 +177,26 @@ pl_add_mouse_button_event(int iButton, bool bDown)
     if(ptLastEvent && ptLastEvent->bMouseDown == bDown)
         return;
 
-    plInputEvent* ptEvent = pl__get_event();
-    ptEvent->tType      = PL_INPUT_EVENT_TYPE_MOUSE_BUTTON;
-    ptEvent->tSource    = PL_INPUT_EVENT_SOURCE_MOUSE;
-    ptEvent->iButton    = iButton;
-    ptEvent->bMouseDown = bDown;
+    const plInputEvent tEvent = {
+        .tType      = PL_INPUT_EVENT_TYPE_MOUSE_BUTTON,
+        .tSource    = PL_INPUT_EVENT_SOURCE_MOUSE,
+        .iButton    = iButton,
+        .bMouseDown = bDown
+    };
+    plu_sb_push(gptCtx->tIO._sbtInputEvents, tEvent);
 }
 
 void
 pl_add_mouse_wheel_event(float fX, float fY)
 {
-    plInputEvent* ptEvent = pl__get_event();
-    ptEvent->tType   = PL_INPUT_EVENT_TYPE_MOUSE_WHEEL;
-    ptEvent->tSource = PL_INPUT_EVENT_SOURCE_MOUSE;
-    ptEvent->fWheelX = fX;
-    ptEvent->fWheelY = fY;
+
+    const plInputEvent tEvent = {
+        .tType   = PL_INPUT_EVENT_TYPE_MOUSE_WHEEL,
+        .tSource = PL_INPUT_EVENT_SOURCE_MOUSE,
+        .fWheelX = fX,
+        .fWheelY = fY
+    };
+    plu_sb_push(gptCtx->tIO._sbtInputEvents, tEvent);
 }
 
 void
@@ -334,14 +344,14 @@ pl_is_mouse_pos_valid(plVec2 tPos)
 }
 
 void
-pl_set_mouse_cursor(plCursor tCursor)
+pl_set_mouse_cursor(plMouseCursor tCursor)
 {
     gptCtx->tIO.tNextCursor = tCursor;
     gptCtx->tIO.bCursorChanged = true;
 }
 
 plUiContext*
-pl_create_ui_context(void)
+pl_create_context(void)
 {
     gptCtx = PL_UI_ALLOC(sizeof(plUiContext));
     memset(gptCtx, 0, sizeof(plUiContext));
@@ -363,8 +373,6 @@ pl_create_ui_context(void)
     gptCtx->tIO.fKeyRepeatDelay          = 0.275f;
     gptCtx->tIO.fKeyRepeatRate           = 0.050f;
     
-    gptCtx->tIO._sbtInputEvents = gptCtx->tIO._atInputEvents;
-    gptCtx->tIO._uInputEventCapacity = 64;
     gptCtx->tIO.afMainFramebufferScale[0] = 1.0f;
     gptCtx->tIO.afMainFramebufferScale[1] = 1.0f;
 
@@ -381,7 +389,7 @@ pl_create_ui_context(void)
 }
 
 void
-pl_destroy_ui_context(void)
+pl_destroy_context(void)
 {
     for(uint32_t i = 0; i < plu_sb_size(gptCtx->sbptWindows); i++)
     {
@@ -399,23 +407,23 @@ pl_destroy_ui_context(void)
     for(uint32_t i = 0u; i < plu_sb_size(gptCtx->sbDrawlists); i++)
     {
         plDrawList* drawlist = gptCtx->sbDrawlists[i];
-        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbSubmittedLayers); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbtSubmittedLayers); j++)
         {
-            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
-            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
-            plu_sb_free(drawlist->sbSubmittedLayers[j]->sbPath);  
+            plu_sb_free(drawlist->sbtSubmittedLayers[j]->sbtCommandBuffer);
+            plu_sb_free(drawlist->sbtSubmittedLayers[j]->sbuIndexBuffer);   
+            plu_sb_free(drawlist->sbtSubmittedLayers[j]->sbtPath);  
         }
 
-        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbLayersCreated); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbtLayersCreated); j++)
         {
-            free(drawlist->sbLayersCreated[j]);
+            free(drawlist->sbtLayersCreated[j]);
         }
-        plu_sb_free(drawlist->sbDrawCommands);
-        plu_sb_free(drawlist->sbVertexBuffer);
-        plu_sb_free(drawlist->sbLayerCache);
-        plu_sb_free(drawlist->sbLayersCreated);
-        plu_sb_free(drawlist->sbSubmittedLayers);   
-        plu_sb_free(drawlist->sbClipStack);
+        plu_sb_free(drawlist->sbtDrawCommands);
+        plu_sb_free(drawlist->sbtVertexBuffer);
+        plu_sb_free(drawlist->sbtLayerCache);
+        plu_sb_free(drawlist->sbtLayersCreated);
+        plu_sb_free(drawlist->sbtSubmittedLayers);   
+        plu_sb_free(drawlist->sbtClipStack);
     }
     plu_sb_free(gptCtx->sbDrawlists);
 
@@ -432,13 +440,13 @@ pl_destroy_ui_context(void)
 }
 
 void
-pl_set_ui_context(plUiContext* ptCtx)
+pl_set_context(plUiContext* ptCtx)
 {
     gptCtx = ptCtx;
 }
 
 plUiContext*
-pl_get_ui_context(void)
+pl_get_context(void)
 {
     return gptCtx;
 }
@@ -503,20 +511,20 @@ pl_new_frame(void)
     {
         plDrawList* drawlist = gptCtx->sbDrawlists[i];
 
-        drawlist->indexBufferByteSize = 0u;
-        plu_sb_reset(drawlist->sbDrawCommands);
-        plu_sb_reset(drawlist->sbVertexBuffer);
+        drawlist->uIndexBufferByteSize = 0u;
+        plu_sb_reset(drawlist->sbtDrawCommands);
+        plu_sb_reset(drawlist->sbtVertexBuffer);
 
         // reset submitted layers
-        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbSubmittedLayers); j++)
+        for(uint32_t j = 0; j < plu_sb_size(drawlist->sbtSubmittedLayers); j++)
         {
-            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbCommandBuffer);
-            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbIndexBuffer);   
-            plu_sb_reset(drawlist->sbSubmittedLayers[j]->sbPath);  
-            drawlist->sbSubmittedLayers[j]->vertexCount = 0u;
-            drawlist->sbSubmittedLayers[j]->_lastCommand = NULL;
+            plu_sb_reset(drawlist->sbtSubmittedLayers[j]->sbtCommandBuffer);
+            plu_sb_reset(drawlist->sbtSubmittedLayers[j]->sbuIndexBuffer);   
+            plu_sb_reset(drawlist->sbtSubmittedLayers[j]->sbtPath);  
+            drawlist->sbtSubmittedLayers[j]->uVertexCount = 0u;
+            drawlist->sbtSubmittedLayers[j]->_ptLastCommand = NULL;
         }
-        plu_sb_reset(drawlist->sbSubmittedLayers);       
+        plu_sb_reset(drawlist->sbtSubmittedLayers);       
     }
 
     gptCtx->frameCount++;
@@ -2132,10 +2140,10 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
             ptWindow->tSize.y - fTitleBarHeight - (ptWindow->bScrollbarX ? gptCtx->tStyle.fScrollbarSize + 2.0f : 0.0f)
         };
 
-        if(plu_sb_size(gptCtx->ptDrawlist->sbClipStack) > 0)
+        if(plu_sb_size(gptCtx->ptDrawlist->sbtClipStack) > 0)
         {
-            ptWindow->tInnerClipRect = plu_rect_clip_full(&ptWindow->tInnerClipRect, &plu_sb_back(gptCtx->ptDrawlist->sbClipStack));
-            ptWindow->tOuterRectClipped = plu_rect_clip_full(&ptWindow->tOuterRectClipped, &plu_sb_back(gptCtx->ptDrawlist->sbClipStack));
+            ptWindow->tInnerClipRect = plu_rect_clip_full(&ptWindow->tInnerClipRect, &plu_sb_back(gptCtx->ptDrawlist->sbtClipStack));
+            ptWindow->tOuterRectClipped = plu_rect_clip_full(&ptWindow->tOuterRectClipped, &plu_sb_back(gptCtx->ptDrawlist->sbtClipStack));
         }
         pl_push_clip_rect(gptCtx->ptDrawlist, ptWindow->tInnerClipRect, false);
 
@@ -2380,7 +2388,8 @@ pl_submit_window(plUiWindow* ptWindow)
 static void
 pl__update_events(void)
 {
-    for(uint32_t i = 0; i < gptCtx->tIO._uInputEventSize; i++)
+    const uint32_t uEventCount = plu_sb_size(gptCtx->tIO._sbtInputEvents);
+    for(uint32_t i = 0; i < uEventCount; i++)
     {
         plInputEvent* ptEvent = &gptCtx->tIO._sbtInputEvents[i];
 
@@ -2434,8 +2443,7 @@ pl__update_events(void)
             }
         }
     }
-
-    gptCtx->tIO._uInputEventSize = 0;
+    plu_sb_reset(gptCtx->tIO._sbtInputEvents)
 }
 
 static void
@@ -2543,9 +2551,10 @@ pl__calc_typematic_repeat_amount(float fT0, float fT1, float fRepeatDelay, float
 static plInputEvent*
 pl__get_last_event(plInputEventType tType, int iButtonOrKey)
 {
-    for(uint32_t i = 0; i < gptCtx->tIO._uInputEventSize; i++)
+    const uint32_t uEventCount = plu_sb_size(gptCtx->tIO._sbtInputEvents);
+    for(uint32_t i = 0; i < uEventCount; i++)
     {
-        plInputEvent* ptEvent = &gptCtx->tIO._sbtInputEvents[gptCtx->tIO._uInputEventSize - i - 1];
+        plInputEvent* ptEvent = &gptCtx->tIO._sbtInputEvents[uEventCount - i - 1];
         if(ptEvent->tType != tType)
             continue;
         if(tType == PL_INPUT_EVENT_TYPE_KEY && (int)ptEvent->tKey != iButtonOrKey)
@@ -2557,40 +2566,4 @@ pl__get_last_event(plInputEventType tType, int iButtonOrKey)
         return ptEvent;
     }
     return NULL;
-}
-
-static plInputEvent*
-pl__get_event(void)
-{
-    plInputEvent* ptEvent = NULL;
-
-    // check if new overflow
-    if(!gptCtx->tIO._bOverflowInUse && gptCtx->tIO._uInputEventSize == gptCtx->tIO._uInputEventCapacity)
-    {
-        gptCtx->tIO._sbtInputEvents = (plInputEvent*)malloc(sizeof(plInputEvent) * 256);
-        memset(gptCtx->tIO._sbtInputEvents, 0, sizeof(plInputEvent) * 256);
-        gptCtx->tIO._uInputEventOverflowCapacity = 256;
-
-        // copy stack samples
-        memcpy(gptCtx->tIO._sbtInputEvents, gptCtx->tIO._atInputEvents, sizeof(plInputEvent) * gptCtx->tIO._uInputEventCapacity);
-        gptCtx->tIO._bOverflowInUse = true;
-    }
-    // check if overflow reallocation is needed
-    else if(gptCtx->tIO._bOverflowInUse && gptCtx->tIO._uInputEventSize == gptCtx->tIO._uInputEventOverflowCapacity)
-    {
-        plInputEvent* sbtOldInputEvents = gptCtx->tIO._sbtInputEvents;
-        gptCtx->tIO._sbtInputEvents = (plInputEvent*)malloc(sizeof(plInputEvent) * gptCtx->tIO._uInputEventOverflowCapacity * 2);
-        memset(gptCtx->tIO._sbtInputEvents, 0, sizeof(plInputEvent) * gptCtx->tIO._uInputEventOverflowCapacity * 2);
-        
-        // copy old values
-        memcpy(gptCtx->tIO._sbtInputEvents, sbtOldInputEvents, sizeof(plInputEvent) * gptCtx->tIO._uInputEventOverflowCapacity);
-        gptCtx->tIO._uInputEventOverflowCapacity *= 2;
-
-        free(sbtOldInputEvents);
-    }
-
-    ptEvent = &gptCtx->tIO._sbtInputEvents[gptCtx->tIO._uInputEventSize];
-    gptCtx->tIO._uInputEventSize++;
-
-    return ptEvent;
 }

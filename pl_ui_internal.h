@@ -397,6 +397,46 @@ plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, siz
 // [SECTION] internal structs
 //-----------------------------------------------------------------------------
 
+typedef struct _plInputEvent
+{
+    plInputEventType   tType;
+    plInputEventSource tSource;
+
+    union
+    {
+        struct // mouse pos event
+        {
+            float fPosX;
+            float fPosY;
+        };
+
+        struct // mouse wheel event
+        {
+            float fWheelX;
+            float fWheelY;
+        };
+        
+        struct // mouse button event
+        {
+            int  iButton;
+            bool bMouseDown;
+        };
+
+        struct // key event
+        {
+            plKey tKey;
+            bool  bKeyDown;
+        };
+
+        struct // text event
+        {
+            uint32_t uChar;
+        };
+        
+    };
+
+} plInputEvent;
+
 typedef struct _plUiColorScheme
 {
     plVec4 tTitleActiveCol;
