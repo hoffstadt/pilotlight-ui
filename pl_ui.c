@@ -731,11 +731,12 @@ pl_end_window(void)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
 
-    float fTitleBarHeight = gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
+    float fTitleBarHeight = ptWindow->tTempData.fTitleBarHeight;
 
     // set content sized based on last frames maximum cursor position
     if(ptWindow->bVisible)
     {
+        // cursor max pos - start pos + padding
         ptWindow->tContentSize = plu_add_vec2(
             (plVec2){gptCtx->tStyle.fWindowHorizontalPadding, gptCtx->tStyle.fWindowVerticalPadding}, 
             plu_sub_vec2(ptWindow->tTempData.tCursorMaxPos, ptWindow->tTempData.tCursorStartPos)
@@ -749,16 +750,17 @@ pl_end_window(void)
     ptWindow->bScrollbarX = ptWindow->tScrollMax.x > 0.0f;
     ptWindow->bScrollbarY = ptWindow->tScrollMax.y > 0.0f;
 
-    if(ptWindow->bScrollbarX)
+    if(ptWindow->bScrollbarX && ptWindow->bScrollbarY)
+    {
         ptWindow->tScrollMax.y += gptCtx->tStyle.fScrollbarSize + 2.0f;
-
-    if(ptWindow->bScrollbarY)
         ptWindow->tScrollMax.x += gptCtx->tStyle.fScrollbarSize + 2.0f;
+    }
+    else if(!ptWindow->bScrollbarY)
+        ptWindow->tScroll.y = 0;
+    else if(!ptWindow->bScrollbarX)
+        ptWindow->tScroll.x = 0;
 
     const bool bScrollBarsPresent = ptWindow->bScrollbarX || ptWindow->bScrollbarY;
-
-    if(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_NO_TITLE_BAR)
-        fTitleBarHeight = 0.0f;
 
     // clamp window size to min/max
     ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
@@ -1939,7 +1941,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
 
     // title text & title bar sizes
     const plVec2 tTextSize = pl_ui_calculate_text_size(gptCtx->ptFont, gptCtx->tStyle.fFontSize, pcName, 0.0f);
-    const float fTitleBarHeight = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
+    float fTitleBarHeight = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
 
     // see if window already exist in storage
     ptWindow = pl_get_ptr(&gptCtx->tWindows, uWindowID);
@@ -1965,7 +1967,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         ptWindow->uFocusOrder             = plu_sb_size(gptCtx->sbptFocusedWindows);
         ptWindow->tFlags                  = PL_UI_WINDOW_FLAGS_NONE;
 
-        // add to focused windows
+        // add to focused windows if not a child
         if(!(tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW))
         {
             plu_sb_push(gptCtx->sbptFocusedWindows, ptWindow);
@@ -2061,7 +2063,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         ptWindow->tInnerRect.tMax.x -= gptCtx->tStyle.fScrollbarSize + 2.0f;
 
     // decorations
-    if(!(tFlags & PL_UI_WINDOW_FLAGS_NO_TITLE_BAR))
+    if(!(tFlags & PL_UI_WINDOW_FLAGS_NO_TITLE_BAR)) // has title bar
     {
 
         ptWindow->tInnerRect.tMin.y += fTitleBarHeight;
@@ -2127,6 +2129,8 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         }
 
     }
+    else
+        fTitleBarHeight = 0.0f;
 
     // remove padding for inner clip rect
     ptWindow->tInnerClipRect = plu_rect_expand_vec2(&ptWindow->tInnerRect, (plVec2){-gptCtx->tStyle.fWindowHorizontalPadding, 0.0f});
@@ -2146,7 +2150,6 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
             ptWindow->tOuterRectClipped = plu_rect_clip_full(&ptWindow->tOuterRectClipped, &plu_sb_back(gptCtx->ptDrawlist->sbtClipStack));
         }
         pl_push_clip_rect(gptCtx->ptDrawlist, ptWindow->tInnerClipRect, false);
-
     }
 
     // update cursors
@@ -2154,6 +2157,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     ptWindow->tTempData.tCursorStartPos.y = gptCtx->tStyle.fWindowVerticalPadding + tStartPos.y + fTitleBarHeight - ptWindow->tScroll.y;
     ptWindow->tTempData.tRowPos = ptWindow->tTempData.tCursorStartPos;
     ptWindow->tTempData.tCursorStartPos = plu_floor_vec2(ptWindow->tTempData.tCursorStartPos);
+    ptWindow->tTempData.fTitleBarHeight = fTitleBarHeight;
 
     // reset next window flags
     gptCtx->tNextWindowData.tFlags = PL_NEXT_WINDOW_DATA_FLAGS_NONE;

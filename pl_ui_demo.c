@@ -3,6 +3,8 @@
 void
 pl_debug(bool* pbOpen)
 {
+    // tools
+    static bool bShowDebugLog = false;
     static bool bShowWindowOuterRect = false;
     static bool bShowWindowOuterClippedRect = false;
     static bool bShowWindowInnerRect = false;
@@ -45,6 +47,12 @@ pl_debug(bool* pbOpen)
         }
         
         pl_separator();
+
+        if(pl_tree_node("Tools"))
+        {
+            pl_checkbox("Debug Log", &bShowDebugLog);
+            pl_tree_pop();
+        }
 
         if(pl_tree_node("Windows"))
         {
@@ -137,6 +145,9 @@ pl_debug(bool* pbOpen)
         }
         pl_end_window();
     } 
+
+    if(bShowDebugLog)
+        pl_log(&bShowDebugLog);
 }
 
 void

@@ -602,6 +602,7 @@ typedef struct _plUiTempWindowData
     plUiLayoutRow        tCurrentLayoutRow; // current layout row to use
     plVec2               tRowPos;           // current row starting position
     float                fAccumRowX;        // additional indent due to a parent (like tab bar) not being the first item in a row
+    float                fTitleBarHeight;   // titlebar height
 
     // template layout system
     float fTempMinWidth;
