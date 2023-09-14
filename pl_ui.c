@@ -1843,19 +1843,18 @@ pl_is_item_hoverable(const plRect* ptBox, uint32_t uHash)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
 
-    if(gptCtx->uHoveredId != 0 && gptCtx->uHoveredId != uHash)
-        return false;
-
     if(gptCtx->ptHoveredWindow != gptCtx->ptCurrentWindow)
         return false;
 
-    if(gptCtx->uActiveId != 0 && gptCtx->uActiveId != uHash)
+    // hovered & active ID must be some value but not ours
+    if(gptCtx->uHoveredId != 0 && gptCtx->uHoveredId != uHash)
         return false;
 
-    if(!pl_is_mouse_hovering_rect(ptBox->tMin, ptBox->tMax))
+    // active ID must be not used or ours
+    if(!(gptCtx->uActiveId == uHash || gptCtx->uActiveId == 0))
         return false;
 
-    return true;
+    return pl_is_mouse_hovering_rect(ptBox->tMin, ptBox->tMax);
 }
 
 bool
@@ -1863,19 +1862,18 @@ pl_is_item_hoverable_circle(plVec2 tP, float fRadius, uint32_t uHash)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
 
-    if(gptCtx->uHoveredId != 0 && gptCtx->uHoveredId != uHash)
-        return false;
-
     if(gptCtx->ptHoveredWindow != gptCtx->ptCurrentWindow)
         return false;
 
-    if(gptCtx->uActiveId != 0 && gptCtx->uActiveId != uHash)
+    // hovered & active ID must be some value but not ours
+    if(gptCtx->uHoveredId != 0 && gptCtx->uHoveredId != uHash)
         return false;
 
-    if(!pl_does_circle_contain_point(tP, fRadius, pl_get_mouse_pos()))
+    // active ID must be not used or ours
+    if(!(gptCtx->uActiveId == uHash || gptCtx->uActiveId == 0))
         return false;
-
-    return true;
+        
+    return pl_does_circle_contain_point(tP, fRadius, pl_get_mouse_pos());
 }
 
 void

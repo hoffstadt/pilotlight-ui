@@ -354,7 +354,7 @@ pl_button_behavior(const plRect* ptBox, uint32_t uHash, bool* pbOutHovered, bool
     gptCtx->tPrevItemData.bActive = false;
 
     bool bPressed = false;
-    bool bHovered = pl_is_item_hoverable(ptBox, uHash) && (gptCtx->uActiveId == uHash || gptCtx->uActiveId == 0);
+    bool bHovered = pl_is_item_hoverable(ptBox, uHash);
 
     if(bHovered)
         gptCtx->uNextHoveredId = uHash;
@@ -400,7 +400,9 @@ pl_button(const char* pcText)
     if(pl__ui_should_render(&tStartPos, &tWidgetSize))
     {
         const uint32_t uHash = plu_str_hash(pcText, 0, plu_sb_top(gptCtx->sbuIdStack));
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
 
         bool bHovered = false;
         bool bHeld = false;
@@ -458,7 +460,9 @@ pl_selectable(const char* pcText, bool* bpValue)
 
         const plVec2 tEndPos = plu_add_vec2(tStartPos, tWidgetSize);
 
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
@@ -504,7 +508,9 @@ pl_checkbox(const char* pcText, bool* bpValue)
             .y = tStartPos.y + tStartPos.y + tWidgetSize.y / 2.0f - tTextActualCenter.y
         };
 
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, (plVec2){tWidgetSize.y, tWidgetSize.y});
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, (plVec2){tWidgetSize.y, tWidgetSize.y});
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
@@ -552,6 +558,8 @@ pl_radio_button(const char* pcText, int* piValue, int iButtonValue)
 
         plRect tBoundingBox = plu_rect_expand_vec2(&tTextBounding, (plVec2){0.5f * (gptCtx->tStyle.tFramePadding.x + gptCtx->tStyle.tInnerSpacing.x + tWidgetSize.y), 0.0f});
         tBoundingBox = plu_rect_move_start_x(&tBoundingBox, tStartPos.x + gptCtx->tStyle.tFramePadding.x);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
@@ -591,7 +599,9 @@ pl_collapsing_header(const char* pcText)
             .y = tStartPos.y + tStartPos.y + tWidgetSize.y / 2.0f - tTextActualCenter.y
         };
 
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         const bool bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
@@ -653,7 +663,9 @@ pl_tree_node(const char* pcText)
         plRect tTextBounding = pl_calculate_text_bb_ex(gptCtx->ptFont, gptCtx->tStyle.fFontSize, tStartPos, pcText, pl_find_renderered_text_end(pcText, NULL), -1.0f);
         const plVec2 tTextActualCenter = plu_rect_center(&tTextBounding);
 
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tWidgetSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         const bool bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
@@ -975,7 +987,8 @@ pl_labeled_text_v(const char* pcLabel, const char* pcFmt, va_list args)
     pl_advance_cursor(tWidgetSize.x, tWidgetSize.y);
 }
 
-bool pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t szBufferSize, plUiInputTextFlags tFlags);
+bool
+pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t szBufferSize, plUiInputTextFlags tFlags);
 
 bool
 pl_input_text(const char* pcLabel, char* pcBuffer, size_t szBufferSize)
@@ -1031,7 +1044,6 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
     const plVec2 tWidgetSize = pl_calculate_item_size(pl_get_frame_height());
     const plVec2 tStartPos   = pl__ui_get_cursor_pos();
 
-
     const plVec2 tFrameStartPos = {floorf(tStartPos.x + (tWidgetSize.x / 3.0f)), tStartPos.y };
     const uint32_t uHash = plu_str_hash(pcLabel, 0, plu_sb_top(gptCtx->sbuIdStack));
 
@@ -1039,12 +1051,14 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
     const plVec2 tLabelTextActualCenter = plu_rect_center(&tLabelTextBounding);
 
     const plVec2 tFrameSize = { 2.0f * (tWidgetSize.x / 3.0f), tWidgetSize.y};
-    const plRect tBoundingBox = plu_calculate_rect(tFrameStartPos, tFrameSize);
+    plRect tBoundingBox = plu_calculate_rect(tFrameStartPos, tFrameSize);
+    const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+    tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
 
     plUiWindow* ptDrawWindow = ptWindow;
     plVec2 tInnerSize = tFrameSize;
 
-    const bool bHovered = pl_is_item_hoverable(&tBoundingBox, uHash) && (gptCtx->uActiveId == uHash || gptCtx->uActiveId == 0);
+    const bool bHovered = pl_is_item_hoverable(&tBoundingBox, uHash);
 
     if(bHovered)
     {
@@ -1969,7 +1983,9 @@ pl_slider_float_f(const char* pcLabel, float* pfValue, float fMin, float fMax, c
         };
 
         const plVec2 tGrabSize = { gptCtx->tStyle.fSliderSize, tWidgetSize.y};
-        const plRect tGrabBox = plu_calculate_rect(tGrabStartPos, tGrabSize);
+        plRect tGrabBox = plu_calculate_rect(tGrabStartPos, tGrabSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tGrabBox = plu_rect_clip_full(&tGrabBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         const bool bPressed = pl_button_behavior(&tGrabBox, uHash, &bHovered, &bHeld);
@@ -2040,7 +2056,9 @@ pl_slider_int_f(const char* pcLabel, int* piValue, int iMin, int iMax, const cha
         };
 
         const plVec2 tGrabSize = { fBlockLength, tWidgetSize.y};
-        const plRect tGrabBox = plu_calculate_rect(tGrabStartPos, tGrabSize);
+        plRect tGrabBox = plu_calculate_rect(tGrabStartPos, tGrabSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tGrabBox = plu_rect_clip_full(&tGrabBox, ptClipRect);
         bool bHovered = false;
         bool bHeld = false;
         const bool bPressed = pl_button_behavior(&tGrabBox, uHash, &bHovered, &bHeld);
@@ -2077,7 +2095,6 @@ pl_drag_float(const char* pcLabel, float* pfValue, float fSpeed, float fMin, flo
     return pl_drag_float_f(pcLabel, pfValue, fSpeed, fMin, fMax, "%.3f");
 }
 
-
 bool
 pl_drag_float_f(const char* pcLabel, float* pfValue, float fSpeed, float fMin, float fMax, const char* pcFormat)
 {
@@ -2105,7 +2122,9 @@ pl_drag_float_f(const char* pcLabel, float* pfValue, float fSpeed, float fMin, f
             tFrameStartPos.x + tFrameStartPos.x + (2.0f * (tWidgetSize.x / 3.0f)) / 2.0f - tTextActualCenter.x, 
             tFrameStartPos.y + tFrameStartPos.y + tWidgetSize.y / 2.0f - tTextActualCenter.y
         };
-        const plRect tBoundingBox = plu_calculate_rect(tFrameStartPos, tSize);
+        plRect tBoundingBox = plu_calculate_rect(tFrameStartPos, tSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
 
         bool bHovered = false;
         bool bHeld = false;
@@ -2166,7 +2185,9 @@ pl_invisible_button(const char* pcText, plVec2 tSize)
     if(!(tStartPos.y + tSize.y < ptWindow->tPos.y || tStartPos.y > ptWindow->tPos.y + ptWindow->tFullSize.y))
     {
         const uint32_t uHash = plu_str_hash(pcText, 0, plu_sb_top(gptCtx->sbuIdStack));
-        const plRect tBoundingBox = plu_calculate_rect(tStartPos, tSize);
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
 
         bool bHovered = false;
         bool bHeld = false;
