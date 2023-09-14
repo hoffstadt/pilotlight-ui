@@ -1428,10 +1428,10 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
                 const int ib = pl__text_state_has_selection(ptState) ? plu_min(ptState->tStb.select_start, ptState->tStb.select_end) : 0;
                 const int ie = pl__text_state_has_selection(ptState) ? plu_max(ptState->tStb.select_start, ptState->tStb.select_end) : ptState->iCurrentLengthW;
                 const int clipboard_data_len = pl__text_count_utf8_bytes_from_str(ptState->sbTextW + ib, ptState->sbTextW + ie) + 1;
-                char* clipboard_data = (char*)PL_UI_ALLOC(clipboard_data_len * sizeof(char));
+                char* clipboard_data = (char*)pl_memory_alloc(clipboard_data_len * sizeof(char));
                 pl__text_str_to_utf8(clipboard_data, clipboard_data_len, ptState->sbTextW + ib, ptState->sbTextW + ie);
                 gptCtx->tIO.set_clipboard_text_fn(gptCtx->tIO.pClipboardUserData, clipboard_data);
-                PL_UI_FREE(clipboard_data);
+                pl_memory_free(clipboard_data);
             }
             if (bIsCut)
             {
@@ -1448,7 +1448,7 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
             {
                 // Filter pasted buffer
                 const int clipboard_len = (int)strlen(clipboard);
-                plUiWChar* clipboard_filtered = (plUiWChar*)PL_UI_ALLOC((clipboard_len + 1) * sizeof(plUiWChar));
+                plUiWChar* clipboard_filtered = (plUiWChar*)pl_memory_alloc((clipboard_len + 1) * sizeof(plUiWChar));
                 int clipboard_filtered_len = 0;
                 for (const char* s = clipboard; *s != 0; )
                 {
@@ -1464,7 +1464,7 @@ pl_input_text_ex(const char* pcLabel, const char* pcHint, char* pcBuffer, size_t
                     stb_textedit_paste(ptState, &ptState->tStb, clipboard_filtered, clipboard_filtered_len);
                     ptState->bCursorFollow = true;
                 }
-                PL_UI_FREE(clipboard_filtered);
+                pl_memory_free(clipboard_filtered);
             }
         }
 

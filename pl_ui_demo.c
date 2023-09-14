@@ -13,8 +13,9 @@ pl_debug(bool* pbOpen)
 
         const float pfRatios[] = {1.0f};
         pl_layout_row(PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, 0.0f, 1, pfRatios);
-
         pl_text("%.6f ms", gptCtx->tIO.fDeltaTime);
+        pl_layout_row(PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, 0.0f, 1, pfRatios);
+        pl_text("%u allocations", gptCtx->uMemoryAllocations);
 
         pl_separator();
 
@@ -568,5 +569,100 @@ pl_demo(bool* pbOpen)
             pl_end_collapsing_header();
         }
         pl_end_window();
+    }
+}
+
+void
+pl_log(bool* pbOpen)
+{
+
+    static bool bAutoScroll = true;
+    static bool bAllEvents = false;
+    static bool bActiveIdEvents = false;
+    static bool bIOEvents = false;
+
+    if(pl_begin_window("Logging", pbOpen, false))
+    {
+        gptCtx->bLogActive = true;
+        const plVec2 tWindowSize = pl_get_window_size();
+        const plVec2 tWindowPos = pl_get_window_pos();
+        const plVec2 tWindowEnd = {tWindowSize.x + tWindowPos.x, tWindowSize.y + tWindowPos.y};
+
+        pl_layout_dynamic(0.0f, 4);
+
+        pl_text("Log Events:");
+
+        if(pl_checkbox("All", &bAllEvents))
+        {
+            if(bAllEvents)
+            {
+                bActiveIdEvents = true;
+                bIOEvents = true;
+                gptCtx->tDebugLogFlags |= PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID;
+                gptCtx->tDebugLogFlags |= PL_UI_DEBUG_LOG_FLAGS_EVENT_IO;
+            }
+            else
+            {
+                bActiveIdEvents = false;
+                bIOEvents = false;
+                gptCtx->tDebugLogFlags &= ~PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID;
+                gptCtx->tDebugLogFlags &= ~PL_UI_DEBUG_LOG_FLAGS_EVENT_IO;
+            }
+        }
+
+        if(pl_checkbox("Active ID", &bActiveIdEvents))
+        {
+            if(bActiveIdEvents) gptCtx->tDebugLogFlags |= PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID;
+            else gptCtx->tDebugLogFlags &= ~PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID;
+        }
+        if(pl_checkbox("IO", &bIOEvents))
+        {
+            if(bIOEvents) gptCtx->tDebugLogFlags |= PL_UI_DEBUG_LOG_FLAGS_EVENT_IO;
+            else gptCtx->tDebugLogFlags &= ~PL_UI_DEBUG_LOG_FLAGS_EVENT_IO;
+        }
+
+        pl_layout_static(0.0f, 100.0f, 3);
+        pl_checkbox("Auto-Scroll", &bAutoScroll);
+        if(pl_button("Clear"))
+        {
+            plu_sb_reset(gptCtx->sbcLogBuffer);
+            plu_sb_reset(gptCtx->sbuLogEntries);
+        }
+        if(pl_button("Copy"))
+        {
+            plu_sb_resize(gptCtx->tIO.sbcClipboardData, plu_sb_size(gptCtx->sbcLogBuffer));
+            memcpy(gptCtx->tIO.sbcClipboardData, gptCtx->sbcLogBuffer, plu_sb_size(gptCtx->sbcLogBuffer));
+
+            // replace null terminators with new lines
+            for(uint32_t i = 1; i < plu_sb_size(gptCtx->sbuLogEntries); i++)
+                gptCtx->tIO.sbcClipboardData[gptCtx->sbuLogEntries[i] - 1] = '\n';
+            gptCtx->tIO.set_clipboard_text_fn(NULL, gptCtx->tIO.sbcClipboardData);
+        }
+
+        const plVec2 tCursorPos = pl_get_cursor_pos();
+        pl_layout_dynamic(tWindowEnd.y - tCursorPos.y - 20.0f, 1);
+        if(pl_begin_child("debug log child"))
+        {
+
+            if(bAutoScroll)
+                pl_set_window_scroll(pl_get_window_scroll_max());
+
+            plUiClipper tClipper = {plu_sb_size(gptCtx->sbuLogEntries)};
+            while(pl_step_clipper(&tClipper))
+            {
+                for(uint32_t j = tClipper.uDisplayStart; j < tClipper.uDisplayEnd; j++)
+                {
+                    pl_text("%s", &gptCtx->sbcLogBuffer[gptCtx->sbuLogEntries[j]]);
+                } 
+            }
+
+            pl_end_child();
+        }
+
+        pl_end_window();
+    }
+    else
+    {
+        gptCtx->bLogActive = false;
     }
 }

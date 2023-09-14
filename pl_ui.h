@@ -109,6 +109,7 @@ void           pl_render   (void); // submits draw layers, you can then submit t
 void           pl_debug(bool* pbOpen);
 void           pl_style(bool* pbOpen);
 void           pl_demo (bool* pbOpen);
+void           pl_log  (bool* pbOpen);
 
 // styling
 void           pl_set_dark_theme(void);
@@ -369,6 +370,11 @@ void          pl_push_clip_rect_pt(plDrawList* ptDrawlist, const plRect* ptRect)
 void          pl_push_clip_rect   (plDrawList* ptDrawlist, plRect tRect, bool bAccumulate);
 void          pl_pop_clip_rect    (plDrawList* ptDrawlist);
 const plRect* pl_get_clip_rect    (plDrawList* ptDrawlist);
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~misc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void* pl_memory_alloc(size_t szSize);
+void  pl_memory_free (void* pMemory);
 
 //-----------------------------------------------------------------------------
 // [SECTION] enums & flags

@@ -51,21 +51,6 @@ Index of this file:
 #define plu_vsprintf vsprintf
 #define plu_vnsprintf vsnprintf
 
-#if defined(PL_UI_ALLOC) && defined(PL_UI_FREE) && defined(PL_UI_ALLOC_INDIRECT)
-// ok
-#elif !defined(PL_UI_ALLOC) && !defined(PL_UI_FREE) && !defined(PL_UI_ALLOC_INDIRECT)
-// ok
-#else
-#error "Must define all or none of PL_UI_ALLOC and PL_UI_FREE and PL_UI_ALLOC_INDIRECT"
-#endif
-
-#ifndef PL_UI_ALLOC
-    #include <stdlib.h>
-    #define PL_UI_ALLOC(x) malloc((x))
-    #define PL_UI_ALLOC_INDIRECT(x, FILE, LINE) malloc((x))
-    #define PL_UI_FREE(x)  free((x))
-#endif
-
 #ifndef PL_UI_ASSERT
     #include <assert.h>
     #define PL_UI_ASSERT(x) assert((x))
@@ -114,6 +99,7 @@ typedef int plUiWindowFlags;
 typedef int plUiAxis;
 typedef int plUiLayoutRowEntryType;
 typedef int plUiLayoutSystemType;
+typedef int plDebugLogFlags;
 
 //-----------------------------------------------------------------------------
 // [SECTION] context
@@ -124,6 +110,13 @@ extern plUiContext* gptCtx;
 //-----------------------------------------------------------------------------
 // [SECTION] enums
 //-----------------------------------------------------------------------------
+
+enum plDebugLogFlags_
+{
+    PL_UI_DEBUG_LOG_FLAGS_NONE            = 0,
+    PL_UI_DEBUG_LOG_FLAGS_EVENT_IO        = 1 << 0,
+    PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID = 1 << 1,
+};
 
 enum plUiAxis_
 {
@@ -271,7 +264,7 @@ static inline plRect plu_rect_move_start_x  (const plRect* ptRect, float fX)    
 //-----------------------------------------------------------------------------
 
 #define plu__sb_header(buf) ((plUiSbHeader_*)(((char*)(buf)) - sizeof(plUiSbHeader_)))
-#define plu__sb_may_grow(buf, s, n, m, X, Y) plu__sb_may_grow_((void**)&(buf), (s), (n), (m), __FILE__, __LINE__)
+#define plu__sb_may_grow(buf, s, n, m) plu__sb_may_grow_((void**)&(buf), (s), (n), (m))
 
 typedef struct
 {
@@ -280,39 +273,39 @@ typedef struct
 } plUiSbHeader_;
 
 static void
-plu__sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems, const char* pcFile, int iLine)
+plu__sb_grow(void** ptrBuffer, size_t szElementSize, size_t szNewItems)
 {
 
     plUiSbHeader_* ptOldHeader = plu__sb_header(*ptrBuffer);
 
     const size_t szNewSize = (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_);
-    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)PL_UI_ALLOC_INDIRECT(szNewSize, pcFile, iLine); //-V592
+    plUiSbHeader_* ptNewHeader = (plUiSbHeader_*)pl_memory_alloc(szNewSize); //-V592
     memset(ptNewHeader, 0, (ptOldHeader->uCapacity + szNewItems) * szElementSize + sizeof(plUiSbHeader_));
     if(ptNewHeader)
     {
         ptNewHeader->uSize = ptOldHeader->uSize;
         ptNewHeader->uCapacity = ptOldHeader->uCapacity + (uint32_t)szNewItems;
         memcpy(&ptNewHeader[1], *ptrBuffer, ptOldHeader->uSize * szElementSize);
-        PL_UI_FREE(ptOldHeader);
+        pl_memory_free(ptOldHeader);
         *ptrBuffer = &ptNewHeader[1];
     }
 }
 
 static void
-plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity, const char* pcFile, int iLine)
+plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, size_t szMinCapacity)
 {
     if(*ptrBuffer)
     {   
         plUiSbHeader_* ptOriginalHeader = plu__sb_header(*ptrBuffer);
         if(ptOriginalHeader->uSize + szNewItems > ptOriginalHeader->uCapacity)
         {
-            plu__sb_grow(ptrBuffer, szElementSize, szNewItems, pcFile, iLine);
+            plu__sb_grow(ptrBuffer, szElementSize, szNewItems);
         }
     }
     else // first run
     {
         const size_t szNewSize = szMinCapacity * szElementSize + sizeof(plUiSbHeader_);
-        plUiSbHeader_* ptHeader = (plUiSbHeader_*)PL_UI_ALLOC_INDIRECT(szNewSize, pcFile, iLine);
+        plUiSbHeader_* ptHeader = (plUiSbHeader_*)pl_memory_alloc(szNewSize);
         memset(ptHeader, 0, szMinCapacity * szElementSize + sizeof(plUiSbHeader_));
         if(ptHeader)
         {
@@ -346,7 +339,7 @@ plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, siz
     plu_sb_top((buf))
 
 #define plu_sb_free(buf) \
-    if((buf)){ PL_UI_FREE(plu__sb_header(buf));} (buf) = NULL;
+    if((buf)){ pl_memory_free(plu__sb_header(buf));} (buf) = NULL;
 
 #define plu_sb_reset(buf) \
     if((buf)){ plu__sb_header((buf))->uSize = 0u;}
@@ -358,25 +351,25 @@ plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, siz
     ((buf) ? (buf) + plu__sb_header((buf))->uSize : (buf))
 
 #define plu_sb_add_n(buf, n) \
-    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (plu__sb_header(buf)->uSize += (n), plu__sb_header(buf)->uSize - (n)) : plu_sb_size(buf))
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n)), (n) ? (plu__sb_header(buf)->uSize += (n), plu__sb_header(buf)->uSize - (n)) : plu_sb_size(buf))
 
 #define plu_sb_add(buf) \
     plu_sb_add_n((buf), 1)
 
 #define plu_sb_add_ptr_n(buf, n) \
-    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), (n) ? (plu__sb_header(buf)->uSize += (n), &(buf)[plu__sb_header(buf)->uSize - (n)]) : (buf))
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n)), (n) ? (plu__sb_header(buf)->uSize += (n), &(buf)[plu__sb_header(buf)->uSize - (n)]) : (buf))
 
 #define plu_sb_add_ptr(buf, n) \
     plu_sb_add_ptr_n((buf), 1)
 
 #define plu_sb_push(buf, v) \
-    (plu__sb_may_grow((buf), sizeof(*(buf)), 1, 8, __FILE__, __LINE__), (buf)[plu__sb_header((buf))->uSize++] = (v))
+    (plu__sb_may_grow((buf), sizeof(*(buf)), 1, 8), (buf)[plu__sb_header((buf))->uSize++] = (v))
 
 #define plu_sb_reserve(buf, n) \
-    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__))
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n)))
 
 #define plu_sb_resize(buf, n) \
-    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n), __FILE__, __LINE__), plu__sb_header((buf))->uSize = (n))
+    (plu__sb_may_grow((buf), sizeof(*(buf)), (n), (n)), plu__sb_header((buf))->uSize = (n))
 
 #define plu_sb_del_n(buf, i, n) \
     (memmove(&(buf)[i], &(buf)[(i) + (n)], sizeof *(buf) * (plu__sb_header(buf)->uSize - (n) - (i))), plu__sb_header(buf)->uSize -= (n))
@@ -392,6 +385,33 @@ plu__sb_may_grow_(void** ptrBuffer, size_t szElementSize, size_t szNewItems, siz
 
 #define plu_sb_insert(buf, i, v) \
     (plu_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
+
+static void
+plu__sb_vsprintf(char** ppcBuffer, const char* pcFormat, va_list args)
+{
+    va_list args2;
+    va_copy(args2, args);
+    int32_t n = vsnprintf(NULL, 0, pcFormat, args2);
+    va_end(args2);
+    uint32_t an = plu_sb_size(*ppcBuffer);
+    plu_sb_resize(*ppcBuffer, an + n + 1);
+    vsnprintf(*ppcBuffer + an, n + 1, pcFormat, args);
+}
+
+static void
+plu__sb_sprintf(char** ppcBuffer, const char* pcFormat, ...)
+{
+    va_list args;
+    va_start(args, pcFormat);
+    plu__sb_vsprintf(ppcBuffer, pcFormat, args);
+    va_end(args);
+}
+
+#define plu_sb_insert(buf, i, v) \
+    (plu_sb_insert_n((buf), (i), 1), (buf)[i] = (v))
+
+#define plu_sb_sprintf(buf, pcFormat, ...) \
+    plu__sb_sprintf(&(buf), (pcFormat), __VA_ARGS__)
 
 //-----------------------------------------------------------------------------
 // [SECTION] internal structs
@@ -696,11 +716,28 @@ typedef struct _plUiContext
     uint64_t       frameCount;
     plFontAtlas*   fontAtlas;
     plVec2         tFrameBufferScale;
+
+    // logging
+    bool            bLogActive;
+    char*           sbcLogBuffer;
+    uint32_t*       sbuLogEntries; // indices into sbcLogBuffer
+    plDebugLogFlags tDebugLogFlags;
+
+    // memory
+    uint32_t uMemoryAllocations;
+
 } plUiContext;
 
 //-----------------------------------------------------------------------------
 // [SECTION] internal api
 //-----------------------------------------------------------------------------
+
+// logging
+void pl_debug_log(const char* pcFormat, ...);
+
+#define PL_UI_DEBUG_LOG(...)           pl_debug_log(__VA_ARGS__);
+#define PL_UI_DEBUG_LOG_ACTIVE_ID(...) if(gptCtx->tDebugLogFlags & PL_UI_DEBUG_LOG_FLAGS_EVENT_ACTIVE_ID) { pl_debug_log(__VA_ARGS__); }
+#define PL_UI_DEBUG_LOG_IO(...)        if(gptCtx->tDebugLogFlags & PL_UI_DEBUG_LOG_FLAGS_EVENT_IO)        { pl_debug_log(__VA_ARGS__); }
 
 const char*          pl_find_renderered_text_end(const char* pcText, const char* pcTextEnd);
 void                 pl_ui_add_text             (plDrawLayer* ptLayer, plFont* ptFont, float fSize, plVec2 tP, plVec4 tColor, const char* pcText, float fWrap);

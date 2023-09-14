@@ -353,10 +353,11 @@ pl_set_mouse_cursor(plMouseCursor tCursor)
 plUiContext*
 pl_create_context(void)
 {
-    gptCtx = PL_UI_ALLOC(sizeof(plUiContext));
+    static plUiContext tContext = {0};
+    gptCtx = &tContext;
     memset(gptCtx, 0, sizeof(plUiContext));
-    gptCtx->ptDrawlist = PL_UI_ALLOC(sizeof(plDrawList));
-    gptCtx->ptDebugDrawlist = PL_UI_ALLOC(sizeof(plDrawList));
+    gptCtx->ptDrawlist = pl_memory_alloc(sizeof(plDrawList));
+    gptCtx->ptDebugDrawlist = pl_memory_alloc(sizeof(plDrawList));
     memset(gptCtx->ptDrawlist, 0, sizeof(plDrawList));
     memset(gptCtx->ptDebugDrawlist, 0, sizeof(plDrawList));
     pl_register_drawlist(gptCtx->ptDrawlist);
@@ -399,10 +400,8 @@ pl_destroy_context(void)
         plu_sb_free(gptCtx->sbptWindows[i]->sbtRowStack);
         plu_sb_free(gptCtx->sbptWindows[i]->sbtChildWindows);
         plu_sb_free(gptCtx->sbptWindows[i]->sbtRowTemplateEntries);
-        PL_UI_FREE(gptCtx->sbptWindows[i]);
+        pl_memory_free(gptCtx->sbptWindows[i]);
     }
-
-
 
     for(uint32_t i = 0u; i < plu_sb_size(gptCtx->sbDrawlists); i++)
     {
@@ -427,15 +426,15 @@ pl_destroy_context(void)
     }
     plu_sb_free(gptCtx->sbDrawlists);
 
-    PL_UI_FREE(gptCtx->ptDrawlist);
-    PL_UI_FREE(gptCtx->ptDebugDrawlist);
+    pl_memory_free(gptCtx->ptDrawlist);
+    pl_memory_free(gptCtx->ptDebugDrawlist);
     plu_sb_free(gptCtx->tWindows.sbtData);
     plu_sb_free(gptCtx->sbptWindows);
     plu_sb_free(gptCtx->sbtTabBars);
     plu_sb_free(gptCtx->sbptFocusedWindows);
     plu_sb_free(gptCtx->sbuIdStack);
 
-    PL_UI_FREE(gptCtx);
+    memset(gptCtx, 0, sizeof(plUiContext));
     gptCtx = NULL;
 }
 
@@ -486,7 +485,7 @@ pl_new_frame(void)
         }
     }
 
-
+    // update IO structure
     gptCtx->tIO.dTime += (double)gptCtx->tIO.fDeltaTime;
     gptCtx->tIO.ulFrameCount++;
     gptCtx->tIO.bViewportSizeChanged = false;
@@ -500,7 +499,8 @@ pl_new_frame(void)
     gptCtx->tIO._iFrameRateSecPerFrameIdx = (gptCtx->tIO._iFrameRateSecPerFrameIdx + 1) % 120;
     gptCtx->tIO._iFrameRateSecPerFrameCount = plu_max(gptCtx->tIO._iFrameRateSecPerFrameCount, 120);
     gptCtx->tIO.fFrameRate = FLT_MAX;
-    if(gptCtx->tIO._fFrameRateSecPerFrameAccum > 0) gptCtx->tIO.fFrameRate = ((float) gptCtx->tIO._iFrameRateSecPerFrameCount) / gptCtx->tIO._fFrameRateSecPerFrameAccum;
+    if(gptCtx->tIO._fFrameRateSecPerFrameAccum > 0)
+        gptCtx->tIO.fFrameRate = ((float) gptCtx->tIO._iFrameRateSecPerFrameCount) / gptCtx->tIO._fFrameRateSecPerFrameAccum;
 
     pl__update_events();
     pl__update_keyboard_inputs();
@@ -1948,7 +1948,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     if(ptWindow == NULL)
     {
         // allocate new window
-        ptWindow = PL_UI_ALLOC(sizeof(plUiWindow));
+        ptWindow = pl_memory_alloc(sizeof(plUiWindow));
         memset(ptWindow, 0, sizeof(plUiWindow));
         ptWindow->uId                     = uWindowID;
         ptWindow->pcName                  = pcName;
@@ -2397,6 +2397,7 @@ pl__update_events(void)
         {
             case PL_INPUT_EVENT_TYPE_MOUSE_POS:
             {
+                PL_UI_DEBUG_LOG_IO("[%Iu] IO Mouse Pos (%0.0f, %0.0f)", gptCtx->frameCount, ptEvent->fPosX, ptEvent->fPosY);
 
                 if(ptEvent->fPosX != -FLT_MAX && ptEvent->fPosY != -FLT_MAX)
                 {
@@ -2408,6 +2409,7 @@ pl__update_events(void)
 
             case PL_INPUT_EVENT_TYPE_MOUSE_WHEEL:
             {
+                PL_UI_DEBUG_LOG_IO("[%Iu] IO Mouse Wheel (%0.0f, %0.0f)", gptCtx->frameCount, ptEvent->fWheelX, ptEvent->fWheelY);
                 gptCtx->tIO._fMouseWheelH += ptEvent->fWheelX;
                 gptCtx->tIO._fMouseWheel += ptEvent->fWheelY;
                 break;
@@ -2415,6 +2417,7 @@ pl__update_events(void)
 
             case PL_INPUT_EVENT_TYPE_MOUSE_BUTTON:
             {
+                PL_UI_DEBUG_LOG_IO(ptEvent->bMouseDown ? "[%Iu] IO Mouse Button %i down" : "[%Iu] IO Mouse Button %i up", gptCtx->frameCount, ptEvent->iButton);
                 assert(ptEvent->iButton >= 0 && ptEvent->iButton < PL_MOUSE_BUTTON_COUNT);
                 gptCtx->tIO._abMouseDown[ptEvent->iButton] = ptEvent->bMouseDown;
                 break;
@@ -2422,6 +2425,8 @@ pl__update_events(void)
 
             case PL_INPUT_EVENT_TYPE_KEY:
             {
+                if(ptEvent->tKey < PL_KEY_COUNT)
+                    PL_UI_DEBUG_LOG_IO(ptEvent->bKeyDown ? "[%Iu] IO Key %i down" : "[%Iu] IO Key %i up", gptCtx->frameCount, ptEvent->tKey);
                 plKey tKey = ptEvent->tKey;
                 assert(tKey != PL_KEY_NONE);
                 plKeyData* ptKeyData = pl_get_key_data(tKey);
@@ -2431,6 +2436,7 @@ pl__update_events(void)
 
             case PL_INPUT_EVENT_TYPE_TEXT:
             {
+                PL_UI_DEBUG_LOG_IO("[%Iu] IO Text (U+%08u)", gptCtx->frameCount, (uint32_t)ptEvent->uChar);
                 plUiWChar uChar = (plUiWChar)ptEvent->uChar;
                 plu_sb_push(gptCtx->tIO._sbInputQueueCharacters, uChar);
                 break;
@@ -2450,9 +2456,9 @@ static void
 pl__update_keyboard_inputs(void)
 {
     gptCtx->tIO.tKeyMods = 0;
-    if (pl_is_key_down(PL_KEY_LEFT_CTRL) || pl_is_key_down(PL_KEY_RIGHT_CTRL))     { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_CTRL; }
+    if (pl_is_key_down(PL_KEY_LEFT_CTRL)  || pl_is_key_down(PL_KEY_RIGHT_CTRL))     { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_CTRL; }
     if (pl_is_key_down(PL_KEY_LEFT_SHIFT) || pl_is_key_down(PL_KEY_RIGHT_SHIFT))    { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_SHIFT; }
-    if (pl_is_key_down(PL_KEY_LEFT_ALT) || pl_is_key_down(PL_KEY_RIGHT_ALT))      { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_ALT; }
+    if (pl_is_key_down(PL_KEY_LEFT_ALT)   || pl_is_key_down(PL_KEY_RIGHT_ALT))      { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_ALT; }
     if (pl_is_key_down(PL_KEY_LEFT_SUPER) || pl_is_key_down(PL_KEY_RIGHT_SUPER))    { gptCtx->tIO.tKeyMods |= PL_KEY_MOD_SUPER; }
 
     gptCtx->tIO.bKeyCtrl  = (gptCtx->tIO.tKeyMods & PL_KEY_MOD_CTRL) != 0;
@@ -2479,6 +2485,7 @@ pl__update_mouse_inputs(void)
         gptCtx->tIO._tLastValidMousePos = gptCtx->tIO._tMousePos;
     }
 
+    // only calculate data if the current & previous mouse position are valid
     if(pl_is_mouse_pos_valid(gptCtx->tIO._tMousePos) && pl_is_mouse_pos_valid(gptCtx->tIO._tMousePosPrev))
         gptCtx->tIO._tMouseDelta = plu_sub_vec2(gptCtx->tIO._tMousePos, gptCtx->tIO._tMousePosPrev);
     else
@@ -2486,7 +2493,6 @@ pl__update_mouse_inputs(void)
         gptCtx->tIO._tMouseDelta.x = 0.0f;
         gptCtx->tIO._tMouseDelta.y = 0.0f;
     }
-
     gptCtx->tIO._tMousePosPrev = gptCtx->tIO._tMousePos;
 
     for(uint32_t i = 0; i < PL_MOUSE_BUTTON_COUNT; i++)
@@ -2566,4 +2572,34 @@ pl__get_last_event(plInputEventType tType, int iButtonOrKey)
         return ptEvent;
     }
     return NULL;
+}
+
+void
+pl_debug_log(const char* pcFormat, ...)
+{
+    if(!gptCtx->bLogActive)
+        return;
+        
+    plu_sb_push(gptCtx->sbuLogEntries, plu_sb_size(gptCtx->sbcLogBuffer));
+
+    va_list argptr;
+    va_start(argptr, pcFormat);
+    plu__sb_vsprintf(&gptCtx->sbcLogBuffer, pcFormat, argptr);
+    va_end(argptr);     
+}
+
+void*
+pl_memory_alloc(size_t szSize)
+{
+    if(gptCtx)
+        gptCtx->uMemoryAllocations++;
+    return malloc(szSize);
+}
+
+void
+pl_memory_free(void* pMemory)
+{
+    if(gptCtx)
+        gptCtx->uMemoryAllocations--;
+    free(pMemory);
 }

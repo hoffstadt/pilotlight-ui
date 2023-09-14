@@ -1,5 +1,5 @@
 /*
-   pl_metal.c
+   pl_ui_metal.m
 */
 
 /*

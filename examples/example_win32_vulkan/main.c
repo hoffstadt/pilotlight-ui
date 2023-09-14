@@ -595,6 +595,9 @@ render_frame(void)
             pl_new_frame();
 
             pl_demo(NULL);
+            pl_style(NULL);
+            pl_log(NULL);
+            pl_debug(NULL);
 
             pl_add_line(fgDrawLayer, (plVec2){0}, (plVec2){300.0f, 300.0f}, (plVec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
 
