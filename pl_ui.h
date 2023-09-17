@@ -79,6 +79,7 @@ typedef int plKeyChord;
 typedef int plUiConditionFlags; // -> enum plUiConditionFlags_ // Enum: A conditional for some functions (PL_UI_COND_XXX value)
 typedef int plUiLayoutRowType;  // -> enum plUiLayoutRowType_  // Enum: A row type for the layout system (PL_UI_LAYOUT_ROW_TYPE_XXX)
 typedef int plUiInputTextFlags; // -> enum plUiInputTextFlags_ // Enum: Internal flags for input text (PL_UI_INPUT_TEXT_FLAGS_XXX)
+typedef int plUiDockLocation;   // -> enum plUiDockLocation_   // Enum: A location for docking window (PL_UI_DOCK_Location_XXX)
 typedef int plKey;              // -> enum plKey_              // Enum: A key identifier (PL_KEY_XXX or PL_KEY_MOD_XXX value)
 typedef int plMouseButton;      // -> enum plMouseButton_      // Enum: A mouse button identifier (PL_MOUSE_BUTTON_XXX)
 typedef int plMouseCursor;      // -> enum plMouseCursor_      // Enum: Mouse cursor shape (PL_MOUSE_CURSOR_XXX)
@@ -157,6 +158,7 @@ void           pl_set_window_scroll    (plVec2 tScroll);
 void           pl_set_next_window_pos     (plVec2 tPos, plUiConditionFlags tCondition);
 void           pl_set_next_window_size    (plVec2 tSize, plUiConditionFlags tCondition);
 void           pl_set_next_window_collapse(bool bCollapsed, plUiConditionFlags tCondition);
+void           pl_set_next_window_dock    (bool bDocked, plUiDockLocation tLocation, plUiConditionFlags tCondition);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~widgets~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -488,6 +490,15 @@ enum plMouseCursor_
     PL_MOUSE_CURSOR_HAND,
     PL_MOUSE_CURSOR_NOT_ALLOWED,
     PL_MOUSE_CURSOR_COUNT
+};
+
+enum plUiDockLocation_
+{
+    PL_UI_DOCK_LOCATION_NONE,
+    PL_UI_DOCK_LOCATION_NORTH,
+    PL_UI_DOCK_LOCATION_SOUTH,
+    PL_UI_DOCK_LOCATION_WEST,
+    PL_UI_DOCK_LOCATION_EAST,
 };
 
 //-----------------------------------------------------------------------------

@@ -142,7 +142,8 @@ enum _plUiNextWindowFlags
     PL_NEXT_WINDOW_DATA_FLAGS_NONE          = 0,
     PL_NEXT_WINDOW_DATA_FLAGS_HAS_POS       = 1 << 0,
     PL_NEXT_WINDOW_DATA_FLAGS_HAS_SIZE      = 1 << 1,
-    PL_NEXT_WINDOW_DATA_FLAGS_HAS_COLLAPSED = 1 << 2,   
+    PL_NEXT_WINDOW_DATA_FLAGS_HAS_COLLAPSED = 1 << 2,
+    PL_NEXT_WINDOW_DATA_FLAGS_HAS_DOCKED    = 1 << 3,
 };
 
 enum plUiLayoutRowEntryType_
@@ -555,7 +556,7 @@ typedef struct _plUiInputTextState
     uint32_t           uId;
     int                iCurrentLengthW;        // widget id owning the text state
     int                iCurrentLengthA;        // we need to maintain our buffer length in both UTF-8 and wchar format. UTF-8 length is valid even if TextA is not.
-    plUiWChar*           sbTextW;                // edit buffer, we need to persist but can't guarantee the persistence of the user-provided buffer. so we copy into own buffer.
+    plUiWChar*         sbTextW;                // edit buffer, we need to persist but can't guarantee the persistence of the user-provided buffer. so we copy into own buffer.
     char*              sbTextA;                // temporary UTF8 buffer for callbacks and other operations. this is not updated in every code-path! size=capacity.
     char*              sbInitialTextA;         // backup of end-user buffer at the time of focus (in UTF-8, unaltered)
     bool               bTextAIsValid;          // temporary UTF8 buffer is not initially valid before we make the widget active (until then we pull the data from user argument)
@@ -631,6 +632,7 @@ typedef struct _plUiWindow
     bool                 bVisible;                // true if visible (only for child windows at the moment)
     bool                 bActive;                 // window has been "seen" this frame
     bool                 bCollapsed;              // window is currently collapsed
+    bool                 bDocked;                 // window is docked
     bool                 bScrollbarX;             // set if horizontal scroll bar is "on"
     bool                 bScrollbarY;             // set if vertical scroll bar is "on"
     plUiTempWindowData   tTempData;               // temporary data reset at the beginning of frame
@@ -644,6 +646,8 @@ typedef struct _plUiWindow
     plUiConditionFlags   tPosAllowableFlags;      // acceptable condition flags for "pl_set_next_window_pos()"
     plUiConditionFlags   tSizeAllowableFlags;     // acceptable condition flags for "pl_set_next_window_size()"
     plUiConditionFlags   tCollapseAllowableFlags; // acceptable condition flags for "pl_set_next_window_collapse()"
+    plUiConditionFlags   tDockAllowableFlags;     // acceptable condition flags for "pl_set_next_window_docl()"
+    plUiDockLocation     tDockFlags;              // docking location
     uint8_t              uHideFrames;             // hide window for this many frames (useful for autosizing)
     uint32_t             uFocusOrder;             // display rank
     plUiStorage          tStorage;                // state storage
@@ -659,9 +663,12 @@ typedef struct _plUiNextWindowData
     plUiConditionFlags  tPosCondition;
     plUiConditionFlags  tSizeCondition;
     plUiConditionFlags  tCollapseCondition;
+    plUiConditionFlags  tDockCondition;
+    plUiDockLocation    tDockLocation;
     plVec2              tPos;
     plVec2              tSize;
     bool                bCollapsed;
+    bool                bDocked;
 } plUiNextWindowData;
 
 typedef struct _plUiContext

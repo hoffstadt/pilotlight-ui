@@ -1286,6 +1286,15 @@ pl_set_next_window_collapse(bool bCollapsed, plUiConditionFlags tCondition)
     gptCtx->tNextWindowData.tCollapseCondition = tCondition;    
 }
 
+void
+pl_set_next_window_dock(bool bDocked, plUiDockLocation tLocation, plUiConditionFlags tCondition)
+{
+    gptCtx->tNextWindowData.bDocked = bDocked;
+    gptCtx->tNextWindowData.tFlags |= PL_NEXT_WINDOW_DATA_FLAGS_HAS_DOCKED;
+    gptCtx->tNextWindowData.tDockLocation = tLocation;
+    gptCtx->tNextWindowData.tDockCondition = tCondition;
+}
+
 bool
 pl_step_clipper(plUiClipper* ptClipper)
 {
@@ -1996,22 +2005,30 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     // clamp window size to min/max
     ptWindow->tSize = plu_clamp_vec2(ptWindow->tMinSize, ptWindow->tSize, ptWindow->tMaxSize);
 
-    // should window collapse
+    // next window calls
+
+    // next window docked
+    if(gptCtx->tNextWindowData.tFlags & PL_NEXT_WINDOW_DATA_FLAGS_HAS_DOCKED)
+    {
+        if(ptWindow->tDockAllowableFlags & gptCtx->tNextWindowData.tDockCondition)
+        {
+            ptWindow->bDocked = gptCtx->tNextWindowData.bDocked;
+            ptWindow->tDockAllowableFlags &= ~PL_UI_COND_ONCE;
+        }
+    }
+
+    // next window collapse
     if(gptCtx->tNextWindowData.tFlags & PL_NEXT_WINDOW_DATA_FLAGS_HAS_COLLAPSED)
     {
         if(ptWindow->tCollapseAllowableFlags & gptCtx->tNextWindowData.tCollapseCondition)
         {
-            ptWindow->bCollapsed = true;
+            ptWindow->bCollapsed = gptCtx->tNextWindowData.bCollapsed;
             ptWindow->tCollapseAllowableFlags &= ~PL_UI_COND_ONCE;
         }   
     }
 
-    // position & size
-    const plVec2 tMousePos = pl_get_mouse_pos();
+    // next window pos
     plVec2 tStartPos = ptWindow->tPos;
-
-    // next window calls
-    bool bWindowSizeSet = false;
     bool bWindowPosSet = false;
     if(gptCtx->tNextWindowData.tFlags & PL_NEXT_WINDOW_DATA_FLAGS_HAS_POS)
     {
@@ -2024,6 +2041,8 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         }   
     }
 
+    // next window size
+    bool bWindowSizeSet = false;
     if(gptCtx->tNextWindowData.tFlags & PL_NEXT_WINDOW_DATA_FLAGS_HAS_SIZE)
     {
         bWindowSizeSet = ptWindow->tSizeAllowableFlags & gptCtx->tNextWindowData.tSizeCondition;
@@ -2040,6 +2059,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     }
 
     // title text & title bar sizes
+    const plVec2 tMousePos = pl_get_mouse_pos();
     const plVec2 tTextSize = pl_ui_calculate_text_size(gptCtx->ptFont, gptCtx->tStyle.fFontSize, pcName, 0.0f);
     float fTitleBarHeight = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
 
