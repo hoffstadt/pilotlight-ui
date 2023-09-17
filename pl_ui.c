@@ -743,9 +743,9 @@ pl_end_window(void)
         
         );
     }
-    ptWindow->tScrollMax = plu_sub_vec2(ptWindow->tContentSize, (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
     
     // clamp scrolling max
+    ptWindow->tScrollMax = plu_sub_vec2(ptWindow->tContentSize, (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
     ptWindow->tScrollMax = plu_max_vec2(ptWindow->tScrollMax, (plVec2){0});
     ptWindow->bScrollbarX = ptWindow->tScrollMax.x > 0.0f;
     ptWindow->bScrollbarY = ptWindow->tScrollMax.y > 0.0f;
@@ -768,11 +768,6 @@ pl_end_window(void)
     // autosized non collapsed
     if(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_AUTO_SIZE && !ptWindow->bCollapsed)
     {
-
-        const plRect tBgRect = plu_calculate_rect(
-            (plVec2){ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight},
-            (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
-
         // ensure window doesn't get too small
         ptWindow->tSize.x = ptWindow->tContentSize.x + gptCtx->tStyle.fWindowHorizontalPadding * 2.0f;
         ptWindow->tSize.y = fTitleBarHeight + ptWindow->tContentSize.y + gptCtx->tStyle.fWindowVerticalPadding;
@@ -787,6 +782,10 @@ pl_end_window(void)
         pl_pop_clip_rect(gptCtx->ptDrawlist);
 
         // draw background
+        const plRect tBgRect = plu_calculate_rect(
+            (plVec2){ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight},
+            (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
+
         pl_add_rect_filled(ptWindow->ptBgLayer, tBgRect.tMin, tBgRect.tMax, gptCtx->tColorScheme.tWindowBgColor);
 
         ptWindow->tFullSize = ptWindow->tSize;
@@ -795,21 +794,20 @@ pl_end_window(void)
     // regular window non collapsed
     else if(!ptWindow->bCollapsed)
     {
-        plUiWindow* ptParentWindow = ptWindow->ptParentWindow;
-
         plRect tBgRect = plu_calculate_rect(
             (plVec2){ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight},
             (plVec2){ptWindow->tSize.x, ptWindow->tSize.y - fTitleBarHeight});
 
-        plRect tParentBgRect = ptParentWindow->tOuterRect;
-
         if(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW)
         {
+            plUiWindow* ptParentWindow = ptWindow->ptParentWindow;
+            plRect tParentBgRect = ptParentWindow->tOuterRect;
             tBgRect = plu_rect_clip(&tBgRect, &tParentBgRect);
         }
 
         pl_pop_clip_rect(gptCtx->ptDrawlist);
 
+        //creating IDs for window components
         const uint32_t uResizeHash = ptWindow->uId + 1;
         const uint32_t uWestResizeHash = uResizeHash + 1;
         const uint32_t uEastResizeHash = uResizeHash + 2;
@@ -866,7 +864,6 @@ pl_end_window(void)
 
         // east border
         {
-
             plRect tBoundingBox = plu_calculate_rect(tTopRight, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
             tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
 
@@ -1937,10 +1934,6 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
     const uint32_t uWindowID = plu_str_hash(pcName, 0, ptParentWindow ? plu_sb_top(gptCtx->sbuIdStack) : 0);
     plu_sb_push(gptCtx->sbuIdStack, uWindowID);
 
-    // title text & title bar sizes
-    const plVec2 tTextSize = pl_ui_calculate_text_size(gptCtx->ptFont, gptCtx->tStyle.fFontSize, pcName, 0.0f);
-    float fTitleBarHeight = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
-
     // see if window already exist in storage
     ptWindow = pl_get_ptr(&gptCtx->tWindows, uWindowID);
 
@@ -2046,6 +2039,10 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         }   
     }
 
+    // title text & title bar sizes
+    const plVec2 tTextSize = pl_ui_calculate_text_size(gptCtx->ptFont, gptCtx->tStyle.fFontSize, pcName, 0.0f);
+    float fTitleBarHeight = (tFlags & PL_UI_WINDOW_FLAGS_CHILD_WINDOW) ? 0.0f : gptCtx->tStyle.fFontSize + 2.0f * gptCtx->tStyle.fTitlePadding;
+
     if(ptWindow->bCollapsed)
         ptWindow->tSize = (plVec2){ptWindow->tSize.x, fTitleBarHeight};
 
@@ -2135,13 +2132,6 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
 
     if(!ptWindow->bCollapsed)
     {
-        const plVec2 tStartClip = { ptWindow->tPos.x, ptWindow->tPos.y + fTitleBarHeight };
-
-        const plVec2 tInnerClip = { 
-            ptWindow->tSize.x - (ptWindow->bScrollbarY ? gptCtx->tStyle.fScrollbarSize + 2.0f : 0.0f),
-            ptWindow->tSize.y - fTitleBarHeight - (ptWindow->bScrollbarX ? gptCtx->tStyle.fScrollbarSize + 2.0f : 0.0f)
-        };
-
         if(plu_sb_size(gptCtx->ptDrawlist->sbtClipStack) > 0)
         {
             ptWindow->tInnerClipRect = plu_rect_clip_full(&ptWindow->tInnerClipRect, &plu_sb_back(gptCtx->ptDrawlist->sbtClipStack));
@@ -2150,7 +2140,7 @@ pl_begin_window_ex(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
         pl_push_clip_rect(gptCtx->ptDrawlist, ptWindow->tInnerClipRect, false);
     }
 
-    // update cursors
+    // update all temp data to be used in wnd window rendering
     ptWindow->tTempData.tCursorStartPos.x = gptCtx->tStyle.fWindowHorizontalPadding + tStartPos.x - ptWindow->tScroll.x;
     ptWindow->tTempData.tCursorStartPos.y = gptCtx->tStyle.fWindowVerticalPadding + tStartPos.y + fTitleBarHeight - ptWindow->tScroll.y;
     ptWindow->tTempData.tRowPos = ptWindow->tTempData.tCursorStartPos;
