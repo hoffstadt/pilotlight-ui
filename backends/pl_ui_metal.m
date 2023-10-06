@@ -92,8 +92,11 @@ pl_cleanup_metal(void)
 }
 
 void
-pl_new_draw_frame_metal(void)
+pl_new_draw_frame_metal(MTLRenderPassDescriptor* renderPassDescriptor2)
 {
+    plUiContext* ptCtx = pl_get_context();
+    MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
+    metalCtx.framebufferDescriptor = [[FramebufferDescriptor alloc] initWithRenderPassDescriptor:renderPassDescriptor2];
 }
 
 void
@@ -101,7 +104,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
 {
     plUiContext* ptCtx = pl_get_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
-    FramebufferDescriptor* renderPassDescriptor = [[FramebufferDescriptor alloc] initWithRenderPassDescriptor:renderPassDescriptor2];
+    
 
     // ensure gpu vertex buffer size is adequate
     size_t vertexBufferLength = (size_t)plu_sb_size(drawlist->sbtVertexBuffer) * sizeof(plDrawVertex);
@@ -166,24 +169,24 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     
     // Try to retrieve a render pipeline state that is compatible with the framebuffer config for this frame
     // The hit rate for this cache should be very near 100%.
-    id<MTLRenderPipelineState> renderPipelineState = metalCtx.renderPipelineStateCache[renderPassDescriptor];
+    id<MTLRenderPipelineState> renderPipelineState = metalCtx.renderPipelineStateCache[metalCtx.framebufferDescriptor];
     if (renderPipelineState == nil)
     {
         // No luck; make a new render pipeline state
-        renderPipelineState = [metalCtx renderPipelineStateForFramebufferDescriptor:renderPassDescriptor device:metalCtx.device];
+        renderPipelineState = [metalCtx renderPipelineStateForFramebufferDescriptor:metalCtx.framebufferDescriptor device:metalCtx.device];
 
         // Cache render pipeline state for later reuse
-        metalCtx.renderPipelineStateCache[renderPassDescriptor] = renderPipelineState;
+        metalCtx.renderPipelineStateCache[metalCtx.framebufferDescriptor] = renderPipelineState;
     }
 
-    id<MTLRenderPipelineState> renderPipelineStateSDF = metalCtx.renderPipelineStateSDFCache[renderPassDescriptor];
+    id<MTLRenderPipelineState> renderPipelineStateSDF = metalCtx.renderPipelineStateSDFCache[metalCtx.framebufferDescriptor];
     if (renderPipelineStateSDF == nil)
     {
         // No luck; make a new render pipeline state
-        renderPipelineStateSDF = [metalCtx renderPipelineStateForFramebufferDescriptorSDF:renderPassDescriptor device:metalCtx.device];
+        renderPipelineStateSDF = [metalCtx renderPipelineStateForFramebufferDescriptorSDF:metalCtx.framebufferDescriptor device:metalCtx.device];
 
         // Cache render pipeline state for later reuse
-        metalCtx.renderPipelineStateSDFCache[renderPassDescriptor] = renderPipelineStateSDF;
+        metalCtx.renderPipelineStateSDFCache[metalCtx.framebufferDescriptor] = renderPipelineStateSDF;
     }
 
     // update uniform buffer
@@ -500,8 +503,7 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
     pipelineDescriptor.vertexFunction = vertexFunction;
     pipelineDescriptor.fragmentFunction = fragmentFunction;
     pipelineDescriptor.vertexDescriptor = vertexDescriptor;
-    pipelineDescriptor.rasterSampleCount = 1;
-    // pipelineDescriptor.rasterSampleCount = self.framebufferDescriptor.sampleCount;
+    pipelineDescriptor.rasterSampleCount = self.framebufferDescriptor.sampleCount;
     pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
     pipelineDescriptor.colorAttachments[0].blendingEnabled = YES;
     pipelineDescriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
@@ -597,8 +599,7 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
     pipelineDescriptor.vertexFunction = vertexFunction;
     pipelineDescriptor.fragmentFunction = fragmentFunction;
     pipelineDescriptor.vertexDescriptor = vertexDescriptor;
-    pipelineDescriptor.rasterSampleCount = 1;
-    // pipelineDescriptor.rasterSampleCount = self.framebufferDescriptor.sampleCount;
+    pipelineDescriptor.rasterSampleCount = self.framebufferDescriptor.sampleCount;
     pipelineDescriptor.colorAttachments[0].pixelFormat = self.framebufferDescriptor.colorPixelFormat;
     pipelineDescriptor.colorAttachments[0].blendingEnabled = YES;
     pipelineDescriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;

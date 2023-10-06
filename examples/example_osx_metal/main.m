@@ -497,7 +497,7 @@ DispatchRenderLoop(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const C
 
             begin_recording();
 
-            pl_new_draw_frame_metal();
+            pl_new_draw_frame_metal(tGraphics.drawableRenderDescriptor);
             pl_new_frame();
 
             pl_demo(NULL);

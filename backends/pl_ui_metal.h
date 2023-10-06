@@ -33,7 +33,7 @@ void pl_initialize_metal          (id<MTLDevice> device);
 void pl_cleanup_metal             (void);
 void pl_create_metal_font_texture (plFontAtlas* ptAtlas);
 void pl_cleanup_metal_font_texture(plFontAtlas* ptAtlas);
-void pl_new_draw_frame_metal      (void);
+void pl_new_draw_frame_metal      (MTLRenderPassDescriptor* renderPassDescriptor);
 void pl_submit_metal_drawlist     (plDrawList* ptDrawlist, float fWidth, float fHeight, id<MTLRenderCommandEncoder> renderEncoder, MTLRenderPassDescriptor* renderPassDescriptor);
 NS_ASSUME_NONNULL_END
 
