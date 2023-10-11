@@ -5,3 +5,4 @@ examples/out/
 
 # debug files
 examples/example_win32_vulkan/*.pdb
+examples/__pycache__/setup_dev.cpython-311.pyc

@@ -9,6 +9,7 @@ pl_debug(bool* pbOpen)
     static bool bShowWindowOuterClippedRect = false;
     static bool bShowWindowInnerRect = false;
     static bool bShowWindowInnerClipRect = false;
+    pl_set_next_window_dock(true, PL_UI_DOCK_LOCATION_NORTH, PL_UI_COND_ALWAYS);
 
     if(pl_begin_window("Pilot Light UI Metrics/Debugger", pbOpen, false))
     {
