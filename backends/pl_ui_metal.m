@@ -429,10 +429,6 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
         }
     }
 
-    static int blah = 0;
-    blah++;
-    printf("ugh %i\n", blah);
-
     // No luck; make a new buffer
     id<MTLBuffer> backing = [device newBufferWithLength:length options:MTLResourceStorageModeShared];
     return [[MetalBuffer alloc] initWithBuffer:backing];
