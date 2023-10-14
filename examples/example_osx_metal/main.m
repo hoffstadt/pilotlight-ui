@@ -511,9 +511,9 @@ DispatchRenderLoop(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const C
             gptUiCtx->tFrameBufferScale.x = gtIO->afMainFramebufferScale[0];
             gptUiCtx->tFrameBufferScale.y = gtIO->afMainFramebufferScale[1];
             pl_render();
-            pl_submit_metal_drawlist(&drawlist, gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.drawableRenderDescriptor);
-            pl_submit_metal_drawlist(pl_get_draw_list(NULL), gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.drawableRenderDescriptor);
-            pl_submit_metal_drawlist(pl_get_debug_draw_list(NULL), gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.drawableRenderDescriptor);
+            pl_submit_metal_drawlist(&drawlist, gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.tCurrentCommandBuffer, tGraphics.drawableRenderDescriptor);
+            pl_submit_metal_drawlist(pl_get_draw_list(NULL), gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.tCurrentCommandBuffer, tGraphics.drawableRenderDescriptor);
+            pl_submit_metal_drawlist(pl_get_debug_draw_list(NULL), gtIO->afMainViewportSize[0], gtIO->afMainViewportSize[1], tGraphics.tCurrentRenderEncoder, tGraphics.tCurrentCommandBuffer, tGraphics.drawableRenderDescriptor);
 
             end_recording();
             end_frame();

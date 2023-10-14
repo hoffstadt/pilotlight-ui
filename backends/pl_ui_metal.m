@@ -100,7 +100,7 @@ pl_new_draw_frame_metal(MTLRenderPassDescriptor* renderPassDescriptor2)
 }
 
 void
-pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTLRenderCommandEncoder> renderEncoder, MTLRenderPassDescriptor* renderPassDescriptor2)
+pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTLRenderCommandEncoder> renderEncoder, id<MTLCommandBuffer> commandBuffer, MTLRenderPassDescriptor* renderPassDescriptor2)
 {
     plUiContext* ptCtx = pl_get_context();
     MetalContext* metalCtx = ptCtx->tIO.pBackendRendererData;
@@ -257,6 +257,17 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
         [renderEncoder setFragmentTexture:cmd.tTextureId atIndex:2];
         [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:cmd.uElementCount indexType:MTLIndexTypeUInt32 indexBuffer:indexBuffer.buffer indexBufferOffset:cmd.uIndexOffset * sizeof(uint32_t)];
     }
+
+    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> tCmdBuffer)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            @synchronized(metalCtx.bufferCache)
+            {
+                [metalCtx.bufferCache addObject:vertexBuffer];
+                [metalCtx.bufferCache addObject:indexBuffer];
+            }
+        });
+    }];
 }
 
 void
@@ -417,6 +428,10 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
             return bestCandidate;
         }
     }
+
+    static int blah = 0;
+    blah++;
+    printf("ugh %i\n", blah);
 
     // No luck; make a new buffer
     id<MTLBuffer> backing = [device newBufferWithLength:length options:MTLResourceStorageModeShared];
