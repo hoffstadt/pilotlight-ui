@@ -288,6 +288,7 @@ pl_create_metal_font_texture(plFontAtlas* atlas)
     // Set the pixel dimensions of the texture
     metalCtx.textureDescriptor.width = atlas->auAtlasSize[0];
     metalCtx.textureDescriptor.height = atlas->auAtlasSize[1];
+    metalCtx.textureDescriptor.storageMode = MTLStorageModeShared;
 
     // Create the texture from the device by using the descriptor
     metalCtx.fontTexture = [metalCtx.device newTextureWithDescriptor:metalCtx.textureDescriptor];  
@@ -411,6 +412,12 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
             for (MetalBuffer* candidate in self.bufferCache)
                 if (candidate.lastReuseTime > self.lastBufferCachePurge)
                     [survivors addObject:candidate];
+                else
+                {
+                    [candidate.buffer setPurgeableState:MTLPurgeableStateEmpty];
+                    [candidate.buffer release];
+                    [candidate release];
+                }
             self.bufferCache = [survivors mutableCopy];
             self.lastBufferCachePurge = now;
         }
@@ -420,6 +427,7 @@ pl_cleanup_metal_font_texture(plFontAtlas* atlas)
         for (MetalBuffer* candidate in self.bufferCache)
             if (candidate.buffer.length >= length && (bestCandidate == nil || bestCandidate.lastReuseTime > candidate.lastReuseTime))
                 bestCandidate = candidate;
+
 
         if (bestCandidate != nil)
         {
