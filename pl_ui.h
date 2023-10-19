@@ -1,8 +1,8 @@
-// pilotlight ui, v0.1.0 WIP
+// pilotlight ui
 
 // library version
-#define PL_UI_VERSION    "0.1.0"
-#define PL_UI_VERSION_NUM 000100
+#define PL_UI_VERSION    "0.2.0"
+#define PL_UI_VERSION_NUM 000200
 
 /*
 Index of this file:
@@ -84,6 +84,7 @@ typedef int plMouseButton;      // -> enum plMouseButton_      // Enum: A mouse 
 typedef int plMouseCursor;      // -> enum plMouseCursor_      // Enum: Mouse cursor shape (PL_MOUSE_CURSOR_XXX)
 typedef int plInputEventType;   // -> enum plInputEventType_   // Enum: An input event type (PL_INPUT_EVENT_TYPE_XXX)
 typedef int plInputEventSource; // -> enum plInputEventSource_ // Enum: An input event source (PL_INPUT_EVENT_SOURCE_XXX)
+typedef int plUiWindowFlags;    // -> enum plUiWindowFlags_    // Enum: An input event source (PL_UI_WINDOW_FLAGS_XXXX)
 
 //-----------------------------------------------------------------------------
 // [SECTION] public api
@@ -125,7 +126,7 @@ plFont*        pl_get_default_font(void);
 // - passing a valid pointer to pbOpen will show a red circle that will turn pbOpen false when clicked
 // - "pl_end_window()" will return false if collapsed or clipped
 // - if you use autosize, make sure at least 1 row has a static component (or the window will grow unbounded)
-bool           pl_begin_window(const char* pcName, bool* pbOpen, bool bAutoSize);
+bool           pl_begin_window(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags);
 void           pl_end_window  (void);
 
 // window utilities
@@ -379,6 +380,20 @@ void  pl_memory_free (void* pMemory);
 //-----------------------------------------------------------------------------
 // [SECTION] enums & flags
 //-----------------------------------------------------------------------------
+
+enum plUiWindowFlags_
+{
+    PL_UI_WINDOW_FLAGS_NONE         = 0,
+    PL_UI_WINDOW_FLAGS_NO_TITLE_BAR = 1 << 0,
+    PL_UI_WINDOW_FLAGS_NO_RESIZE    = 1 << 1,
+    PL_UI_WINDOW_FLAGS_NO_MOVE      = 1 << 2,
+    PL_UI_WINDOW_FLAGS_NO_COLLAPSE  = 1 << 3,
+    PL_UI_WINDOW_FLAGS_AUTO_SIZE    = 1 << 4,
+
+    // internal
+    PL_UI_WINDOW_FLAGS_CHILD_WINDOW = 1 << 5,
+    PL_UI_WINDOW_FLAGS_TOOLTIP      = 1 << 6,
+};
 
 enum plUiConditionFlags_
 {

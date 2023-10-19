@@ -95,7 +95,6 @@ typedef struct _plUiInputTextState   plUiInputTextState;
 
 // enums
 typedef int plUiNextWindowFlags;
-typedef int plUiWindowFlags;
 typedef int plUiAxis;
 typedef int plUiLayoutRowEntryType;
 typedef int plUiLayoutSystemType;
@@ -123,18 +122,6 @@ enum plUiAxis_
     PL_UI_AXIS_NONE = -1,
     PL_UI_AXIS_X    =  0,
     PL_UI_AXIS_Y    =  1,
-};
-
-enum plUiWindowFlags_
-{
-    PL_UI_WINDOW_FLAGS_NONE         = 0,
-    PL_UI_WINDOW_FLAGS_NO_TITLE_BAR = 1 << 0,
-    PL_UI_WINDOW_FLAGS_NO_RESIZE    = 1 << 1,
-    PL_UI_WINDOW_FLAGS_NO_MOVE      = 1 << 2,
-    PL_UI_WINDOW_FLAGS_NO_COLLAPSE  = 1 << 3,
-    PL_UI_WINDOW_FLAGS_AUTO_SIZE    = 1 << 4,
-    PL_UI_WINDOW_FLAGS_CHILD_WINDOW = 1 << 5,
-    PL_UI_WINDOW_FLAGS_TOOLTIP      = 1 << 6,
 };
 
 enum _plUiNextWindowFlags

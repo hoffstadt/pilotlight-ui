@@ -609,7 +609,7 @@ pl_end_frame(void)
     }
 
     // moving window
-    if(gptCtx->ptMovingWindow && pl_is_mouse_dragging(PL_MOUSE_BUTTON_LEFT, 2.0f))
+    if(gptCtx->ptMovingWindow && pl_is_mouse_dragging(PL_MOUSE_BUTTON_LEFT, 2.0f) && !(gptCtx->ptMovingWindow->tFlags & PL_UI_WINDOW_FLAGS_NO_MOVE))
     {
 
         if(tMousePos.x > 0.0f && tMousePos.x < gptCtx->tIO.afMainViewportSize[0])
@@ -712,9 +712,9 @@ pl_get_default_font(void)
 }
 
 bool
-pl_begin_window(const char* pcName, bool* pbOpen, bool bAutoSize)
+pl_begin_window(const char* pcName, bool* pbOpen, plUiWindowFlags tFlags)
 {
-    bool bResult = pl_begin_window_ex(pcName, pbOpen, bAutoSize ? PL_UI_WINDOW_FLAGS_AUTO_SIZE : PL_UI_WINDOW_FLAGS_NONE);
+    bool bResult = pl_begin_window_ex(pcName, pbOpen, tFlags);
 
     static const float pfRatios[] = {300.0f};
     if(bResult)
@@ -838,114 +838,117 @@ pl_end_window(void)
         const plVec2 tBottomRight = plu_rect_bottom_right(&ptWindow->tOuterRect);
 
         // resizing grip
+        if (!(ptWindow->tFlags & PL_UI_WINDOW_FLAGS_NO_RESIZE))
         {
-            const plVec2 tCornerTopLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, -15.0f});
-            const plVec2 tCornerTopPos = plu_add_vec2(tBottomRight, (plVec2){0.0f, -15.0f});
-            const plVec2 tCornerLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, 0.0f});
-
-            const plRect tBoundingBox = plu_calculate_rect(tCornerTopLeftPos, (plVec2){15.0f, 15.0f});
-            bool bHovered = false;
-            bool bHeld = false;
-            const bool bPressed = pl_button_behavior(&tBoundingBox, uResizeHash, &bHovered, &bHeld);
-
-            if(gptCtx->uActiveId == uResizeHash)
             {
-                pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.99f, 0.02f, 0.10f, 1.0f});
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NWSE);
+                const plVec2 tCornerTopLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, -15.0f});
+                const plVec2 tCornerTopPos = plu_add_vec2(tBottomRight, (plVec2){0.0f, -15.0f});
+                const plVec2 tCornerLeftPos = plu_add_vec2(tBottomRight, (plVec2){-15.0f, 0.0f});
+
+                const plRect tBoundingBox = plu_calculate_rect(tCornerTopLeftPos, (plVec2){15.0f, 15.0f});
+                bool bHovered = false;
+                bool bHeld = false;
+                const bool bPressed = pl_button_behavior(&tBoundingBox, uResizeHash, &bHovered, &bHeld);
+
+                if(gptCtx->uActiveId == uResizeHash)
+                {
+                    pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.99f, 0.02f, 0.10f, 1.0f});
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NWSE);
+                }
+                else if(gptCtx->uHoveredId == uResizeHash)
+                {
+                    pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.66f, 0.02f, 0.10f, 1.0f});
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NWSE);
+                }
+                else
+                {
+                    pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.33f, 0.02f, 0.10f, 1.0f});   
+                }
             }
-            else if(gptCtx->uHoveredId == uResizeHash)
+
+            // east border
             {
-                pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.66f, 0.02f, 0.10f, 1.0f});
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NWSE);
+
+                plRect tBoundingBox = plu_calculate_rect(tTopRight, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
+                tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
+
+                bool bHovered = false;
+                bool bHeld = false;
+                const bool bPressed = pl_button_behavior(&tBoundingBox, uEastResizeHash, &bHovered, &bHeld);
+
+                if(gptCtx->uActiveId == uEastResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopRight, tBottomRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
+                }
+                else if(gptCtx->uHoveredId == uEastResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopRight, tBottomRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
+                }
             }
-            else
+
+            // west border
             {
-                pl_add_triangle_filled(ptWindow->ptFgLayer, tBottomRight, tCornerTopPos, tCornerLeftPos, (plVec4){0.33f, 0.02f, 0.10f, 1.0f});   
+                plRect tBoundingBox = plu_calculate_rect(tTopLeft, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
+                tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
+
+                bool bHovered = false;
+                bool bHeld = false;
+                const bool bPressed = pl_button_behavior(&tBoundingBox, uWestResizeHash, &bHovered, &bHeld);
+
+                if(gptCtx->uActiveId == uWestResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopLeft, tBottomLeft, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
+                }
+                else if(gptCtx->uHoveredId == uWestResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopLeft, tBottomLeft, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
+                }
             }
-        }
 
-        // east border
-        {
-
-            plRect tBoundingBox = plu_calculate_rect(tTopRight, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
-            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
-
-            bool bHovered = false;
-            bool bHeld = false;
-            const bool bPressed = pl_button_behavior(&tBoundingBox, uEastResizeHash, &bHovered, &bHeld);
-
-            if(gptCtx->uActiveId == uEastResizeHash)
+            // north border
             {
-                pl_add_line(ptWindow->ptFgLayer, tTopRight, tBottomRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
+                plRect tBoundingBox = {tTopLeft, (plVec2){tTopRight.x - 15.0f, tTopRight.y}};
+                tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
+
+                bool bHovered = false;
+                bool bHeld = false;
+                const bool bPressed = pl_button_behavior(&tBoundingBox, uNorthResizeHash, &bHovered, &bHeld);
+
+                if(gptCtx->uActiveId == uNorthResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopLeft, tTopRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
+                }
+                else if(gptCtx->uHoveredId == uNorthResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tTopLeft, tTopRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
+                }
             }
-            else if(gptCtx->uHoveredId == uEastResizeHash)
+
+            // south border
             {
-                pl_add_line(ptWindow->ptFgLayer, tTopRight, tBottomRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
-            }
-        }
+                plRect tBoundingBox = {tBottomLeft, (plVec2){tBottomRight.x - 15.0f, tBottomRight.y}};
+                tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
 
-        // west border
-        {
-            plRect tBoundingBox = plu_calculate_rect(tTopLeft, (plVec2){0.0f, ptWindow->tSize.y - 15.0f});
-            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){fHoverPadding / 2.0f, 0.0f});
+                bool bHovered = false;
+                bool bHeld = false;
+                const bool bPressed = pl_button_behavior(&tBoundingBox, uSouthResizeHash, &bHovered, &bHeld);
 
-            bool bHovered = false;
-            bool bHeld = false;
-            const bool bPressed = pl_button_behavior(&tBoundingBox, uWestResizeHash, &bHovered, &bHeld);
-
-            if(gptCtx->uActiveId == uWestResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tTopLeft, tBottomLeft, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
-            }
-            else if(gptCtx->uHoveredId == uWestResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tTopLeft, tBottomLeft, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_EW);
-            }
-        }
-
-        // north border
-        {
-            plRect tBoundingBox = {tTopLeft, (plVec2){tTopRight.x - 15.0f, tTopRight.y}};
-            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
-
-            bool bHovered = false;
-            bool bHeld = false;
-            const bool bPressed = pl_button_behavior(&tBoundingBox, uNorthResizeHash, &bHovered, &bHeld);
-
-            if(gptCtx->uActiveId == uNorthResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tTopLeft, tTopRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
-            }
-            else if(gptCtx->uHoveredId == uNorthResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tTopLeft, tTopRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
-            }
-        }
-
-        // south border
-        {
-            plRect tBoundingBox = {tBottomLeft, (plVec2){tBottomRight.x - 15.0f, tBottomRight.y}};
-            tBoundingBox = plu_rect_expand_vec2(&tBoundingBox, (plVec2){0.0f, fHoverPadding / 2.0f});
-
-            bool bHovered = false;
-            bool bHeld = false;
-            const bool bPressed = pl_button_behavior(&tBoundingBox, uSouthResizeHash, &bHovered, &bHeld);
-
-            if(gptCtx->uActiveId == uSouthResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tBottomLeft, tBottomRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
-            }
-            else if(gptCtx->uHoveredId == uSouthResizeHash)
-            {
-                pl_add_line(ptWindow->ptFgLayer, tBottomLeft, tBottomRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
-                pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
+                if(gptCtx->uActiveId == uSouthResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tBottomLeft, tBottomRight, (plVec4){0.99f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
+                }
+                else if(gptCtx->uHoveredId == uSouthResizeHash)
+                {
+                    pl_add_line(ptWindow->ptFgLayer, tBottomLeft, tBottomRight, (plVec4){0.66f, 0.02f, 0.10f, 1.0f}, 2.0f);
+                    pl_set_mouse_cursor(PL_MOUSE_CURSOR_RESIZE_NS);
+                }
             }
         }
 

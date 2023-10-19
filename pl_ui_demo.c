@@ -10,7 +10,7 @@ pl_debug(bool* pbOpen)
     static bool bShowWindowInnerRect = false;
     static bool bShowWindowInnerClipRect = false;
 
-    if(pl_begin_window("Pilot Light UI Metrics/Debugger", pbOpen, false))
+    if(pl_begin_window("Pilot Light UI Metrics/Debugger", pbOpen, 0))
     {
 
         const float pfRatios[] = {1.0f};
@@ -154,7 +154,7 @@ void
 pl_style(bool* pbOpen)
 {
 
-    if(pl_begin_window("Pilot Light UI Style", pbOpen, false))
+    if(pl_begin_window("Pilot Light UI Style", pbOpen, 0))
     {
 
         const float pfRatios[] = {1.0f};
@@ -200,7 +200,7 @@ pl_style(bool* pbOpen)
 void
 pl_demo(bool* pbOpen)
 {
-    if(pl_begin_window("UI Demo", pbOpen, false))
+    if(pl_begin_window("UI Demo", pbOpen, 0))
     {
 
         static const float pfRatios0[] = {1.0f};
