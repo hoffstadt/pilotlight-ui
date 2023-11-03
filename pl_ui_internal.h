@@ -725,6 +725,10 @@ typedef struct _plUiContext
     uint32_t*       sbuLogEntries; // indices into sbcLogBuffer
     plDebugLogFlags tDebugLogFlags;
 
+    // config file
+    float fConfigFileDirtyTimer; // write out to disk when this reaches zero
+    char* sbcConfigFileData;
+
     // memory
     uint32_t uMemoryAllocations;
 

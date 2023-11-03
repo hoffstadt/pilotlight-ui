@@ -19,6 +19,7 @@ Index of this file:
 
 #include "pl_ui_internal.h"
 #include <float.h> // FLT_MAX
+#include <stdio.h>
 
 //-----------------------------------------------------------------------------
 // [SECTION] context
@@ -205,6 +206,53 @@ pl_clear_input_characters(void)
     plu_sb_reset(gptCtx->tIO._sbInputQueueCharacters);
 }
 
+void
+pl_load_config_file(const char* pcFileName)
+{
+    FILE* ptConfigFile = fopen(pcFileName, "rb");
+    if(ptConfigFile == NULL)
+        return;
+    
+    // obtain file size
+    fseek(ptConfigFile, 0, SEEK_END);
+    const size_t szSize = (size_t)ftell(ptConfigFile);
+    fseek(ptConfigFile, 0, SEEK_SET);
+
+    plu_sb_resize(gptCtx->sbcConfigFileData, szSize);
+
+    // copy the file into the buffer:
+    size_t szResult = fread(gptCtx->sbcConfigFileData, sizeof(char), szSize, ptConfigFile);
+    if (szResult != szSize)
+    {
+        if (feof(ptConfigFile))
+        {
+            PL_UI_ASSERT(false && "Error reading: unexpected end of file");
+        }
+        else if (ferror(ptConfigFile))
+        {
+            PL_UI_ASSERT(false && "Error reading");
+        }
+        PL_UI_ASSERT(false && "File not read");
+    }
+
+    fclose(ptConfigFile);
+}
+
+void
+pl_save_config_file(const char* pcFileName)
+{
+    if(plu_sb_size(gptCtx->sbcConfigFileData) > 0)
+    {
+        FILE* ptConfigFile = fopen(pcFileName, "wb");
+        if(ptConfigFile == NULL)
+            return;
+
+        fwrite(gptCtx->sbcConfigFileData, sizeof(char), plu_sb_size(gptCtx->sbcConfigFileData), ptConfigFile);
+        fclose(ptConfigFile);  
+    }
+    gptCtx->fConfigFileDirtyTimer = gptCtx->tIO.fConfigSavingRate;
+}
+
 bool
 pl_is_key_down(plKey tKey)
 {
@@ -373,6 +421,8 @@ pl_create_context(void)
     gptCtx->tIO.fMouseDragThreshold      = 6.0f;
     gptCtx->tIO.fKeyRepeatDelay          = 0.275f;
     gptCtx->tIO.fKeyRepeatRate           = 0.050f;
+    gptCtx->tIO.fConfigSavingRate        = 5.0f;
+    gptCtx->tIO.pcConfigFileName         = "pl_config.ini";
     
     gptCtx->tIO.afMainFramebufferScale[0] = 1.0f;
     gptCtx->tIO.afMainFramebufferScale[1] = 1.0f;
@@ -386,6 +436,9 @@ pl_create_context(void)
     gptCtx->tFrameBufferScale.x = 1.0f;
     gptCtx->tFrameBufferScale.y = 1.0f;
     pl_set_dark_theme();
+
+    pl_load_config_file(gptCtx->tIO.pcConfigFileName);
+
     return gptCtx;
 }
 
@@ -492,6 +545,12 @@ pl_new_frame(void)
     gptCtx->tIO.bWantTextInput = false;
     gptCtx->tIO.bWantCaptureMouse = false;
     gptCtx->tIO.bWantCaptureKeyboard = false;
+    gptCtx->fConfigFileDirtyTimer -= (double)gptCtx->tIO.fDeltaTime;
+
+    if(gptCtx->fConfigFileDirtyTimer < 0.0f)
+    {
+        pl_save_config_file(gptCtx->tIO.pcConfigFileName);
+    }
 
     // calculate frame rate
     gptCtx->tIO._fFrameRateSecPerFrameAccum += gptCtx->tIO.fDeltaTime - gptCtx->tIO._afFrameRateSecPerFrame[gptCtx->tIO._iFrameRateSecPerFrameIdx];

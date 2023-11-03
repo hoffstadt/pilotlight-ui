@@ -328,6 +328,10 @@ void         pl_add_mouse_button_event(int iButton, bool bDown);
 void         pl_add_mouse_wheel_event (float fX, float fY);
 void         pl_clear_input_characters(void);
 
+// config file utilities
+void         pl_load_config_file(const char* pcFileName);
+void         pl_save_config_file(const char* pcFileName);
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~drawing~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // setup
@@ -766,15 +770,17 @@ typedef struct _plIO
     // Configuration
     //------------------------------------------------------------------
 
-    float fDeltaTime;
-    float fMouseDragThreshold;      // default 6.0f
-    float fMouseDoubleClickTime;    // default 0.3f seconds
-    float fMouseDoubleClickMaxDist; // default 6.0f
-    float fKeyRepeatDelay;          // default 0.275f
-    float fKeyRepeatRate;           // default 0.050f
-    float afMainViewportSize[2];
-    float afMainFramebufferScale[2];
-    void* pUserData;
+    float       fDeltaTime;
+    float       fMouseDragThreshold;      // default 6.0f
+    float       fMouseDoubleClickTime;    // default 0.3f seconds
+    float       fMouseDoubleClickMaxDist; // default 6.0f
+    float       fKeyRepeatDelay;          // default 0.275f
+    float       fKeyRepeatRate;           // default 0.050f
+    float       fConfigSavingRate;        // default 5.0f
+    const char* pcConfigFileName;         // default "pl_config.ini"
+    float       afMainViewportSize[2];
+    float       afMainFramebufferScale[2];
+    void*       pUserData;
 
     // miscellaneous options
     bool bConfigMacOSXBehaviors;
