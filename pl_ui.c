@@ -218,7 +218,7 @@ pl_load_config_file(const char* pcFileName)
     const size_t szSize = (size_t)ftell(ptConfigFile);
     fseek(ptConfigFile, 0, SEEK_SET);
 
-    plu_sb_resize(gptCtx->sbcConfigFileData, szSize);
+    plu_sb_resize(gptCtx->sbcConfigFileData, (uint32_t)szSize);
 
     // copy the file into the buffer:
     size_t szResult = fread(gptCtx->sbcConfigFileData, sizeof(char), szSize, ptConfigFile);
@@ -545,7 +545,7 @@ pl_new_frame(void)
     gptCtx->tIO.bWantTextInput = false;
     gptCtx->tIO.bWantCaptureMouse = false;
     gptCtx->tIO.bWantCaptureKeyboard = false;
-    gptCtx->fConfigFileDirtyTimer -= (double)gptCtx->tIO.fDeltaTime;
+    gptCtx->fConfigFileDirtyTimer -= gptCtx->tIO.fDeltaTime;
 
     if(gptCtx->fConfigFileDirtyTimer < 0.0f)
     {
