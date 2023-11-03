@@ -1,8 +1,8 @@
 // pilotlight ui
 
 // library version
-#define PL_UI_VERSION    "0.2.0"
-#define PL_UI_VERSION_NUM 000200
+#define PL_UI_VERSION    "0.2.1"
+#define PL_UI_VERSION_NUM 000201
 
 /*
 Index of this file:
@@ -76,15 +76,16 @@ typedef struct _plRect plRect;
 typedef int plKeyChord;
 
 // enums
-typedef int plUiConditionFlags; // -> enum plUiConditionFlags_ // Enum: A conditional for some functions (PL_UI_COND_XXX value)
-typedef int plUiLayoutRowType;  // -> enum plUiLayoutRowType_  // Enum: A row type for the layout system (PL_UI_LAYOUT_ROW_TYPE_XXX)
-typedef int plUiInputTextFlags; // -> enum plUiInputTextFlags_ // Enum: Internal flags for input text (PL_UI_INPUT_TEXT_FLAGS_XXX)
-typedef int plKey;              // -> enum plKey_              // Enum: A key identifier (PL_KEY_XXX or PL_KEY_MOD_XXX value)
-typedef int plMouseButton;      // -> enum plMouseButton_      // Enum: A mouse button identifier (PL_MOUSE_BUTTON_XXX)
-typedef int plMouseCursor;      // -> enum plMouseCursor_      // Enum: Mouse cursor shape (PL_MOUSE_CURSOR_XXX)
-typedef int plInputEventType;   // -> enum plInputEventType_   // Enum: An input event type (PL_INPUT_EVENT_TYPE_XXX)
-typedef int plInputEventSource; // -> enum plInputEventSource_ // Enum: An input event source (PL_INPUT_EVENT_SOURCE_XXX)
-typedef int plUiWindowFlags;    // -> enum plUiWindowFlags_    // Enum: An input event source (PL_UI_WINDOW_FLAGS_XXXX)
+typedef int plUiConditionFlags;   // -> enum plUiConditionFlags_   // Enum: A conditional for some functions (PL_UI_COND_XXX value)
+typedef int plUiLayoutRowType;    // -> enum plUiLayoutRowType_    // Enum: A row type for the layout system (PL_UI_LAYOUT_ROW_TYPE_XXX)
+typedef int plUiInputTextFlags;   // -> enum plUiInputTextFlags_   // Enum: Internal flags for input text (PL_UI_INPUT_TEXT_FLAGS_XXX)
+typedef int plKey;                // -> enum plKey_                // Enum: A key identifier (PL_KEY_XXX or PL_KEY_MOD_XXX value)
+typedef int plMouseButton;        // -> enum plMouseButton_        // Enum: A mouse button identifier (PL_MOUSE_BUTTON_XXX)
+typedef int plMouseCursor;        // -> enum plMouseCursor_        // Enum: Mouse cursor shape (PL_MOUSE_CURSOR_XXX)
+typedef int plInputEventType;     // -> enum plInputEventType_     // Enum: An input event type (PL_INPUT_EVENT_TYPE_XXX)
+typedef int plInputEventSource;   // -> enum plInputEventSource_   // Enum: An input event source (PL_INPUT_EVENT_SOURCE_XXX)
+typedef int plUiWindowFlags;      // -> enum plUiWindowFlags_      // Enum: An input event source (PL_UI_WINDOW_FLAGS_XXXX)
+typedef int plUiColor;            // -> enum plUiColor_            // Enum: An input event source (PL_UI_COLOR_XXXX)
 
 //-----------------------------------------------------------------------------
 // [SECTION] public api
@@ -113,7 +114,9 @@ void           pl_demo (bool* pbOpen);
 void           pl_log  (bool* pbOpen);
 
 // styling
-void           pl_set_dark_theme(void);
+void           pl_set_dark_theme  (void);
+void           pl_push_theme_color(plUiColor tColor, const plVec4* ptColor);
+void           pl_pop_theme_color (uint32_t uCount);
 
 // fonts
 void           pl_set_default_font(plFont* ptFont);
@@ -380,6 +383,33 @@ void  pl_memory_free (void* pMemory);
 //-----------------------------------------------------------------------------
 // [SECTION] enums & flags
 //-----------------------------------------------------------------------------
+
+enum plUiColor_
+{
+    PL_UI_COLOR_TITLE_ACTIVE,
+    PL_UI_COLOR_TITLE_BG,
+    PL_UI_COLOR_TITLE_BG_COLLAPSED,
+    PL_UI_COLOR_WINDOW_BG,
+    PL_UI_COLOR_WINDOW_BORDER,
+    PL_UI_COLOR_CHILD_BG,
+    PL_UI_COLOR_BUTTON,
+    PL_UI_COLOR_BUTTON_HOVERED,
+    PL_UI_COLOR_BUTTON_ACTIVE,
+    PL_UI_COLOR_TEXT,
+    PL_UI_COLOR_PROGRESS_BAR,
+    PL_UI_COLOR_CHECKMARK,
+    PL_UI_COLOR_FRAME_BG,
+    PL_UI_COLOR_FRAME_BG_HOVERED,
+    PL_UI_COLOR_FRAME_BG_ACTIVE,
+    PL_UI_COLOR_HEADER,
+    PL_UI_COLOR_HEADER_HOVERED,
+    PL_UI_COLOR_HEADER_ACTIVE,
+    PL_UI_COLOR_SCROLLBAR_BG,
+    PL_UI_COLOR_SCROLLBAR_HANDLE,
+    PL_UI_COLOR_SCROLLBAR_FRAME,
+    PL_UI_COLOR_SCROLLBAR_ACTIVE,
+    PL_UI_COLOR_SCROLLBAR_HOVERED
+};
 
 enum plUiWindowFlags_
 {

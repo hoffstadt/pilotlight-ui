@@ -700,6 +700,28 @@ pl_set_dark_theme(void)
 }
 
 void
+pl_push_theme_color(plUiColor tColor, const plVec4* ptColor)
+{
+    const plUiColorStackItem tPrevItem = {
+        .tIndex = tColor,
+        .tColor = gptCtx->tColorScheme.atColors[tColor]
+    };
+    gptCtx->tColorScheme.atColors[tColor] = *ptColor;
+    plu_sb_push(gptCtx->sbtColorStack, tPrevItem);
+}
+
+void
+pl_pop_theme_color(uint32_t uCount)
+{
+    for(uint32_t i = 0; i < uCount; i++)
+    {
+        const plUiColorStackItem tPrevItem = plu_sb_last(gptCtx->sbtColorStack);
+        gptCtx->tColorScheme.atColors[tPrevItem.tIndex] = tPrevItem.tColor;
+        plu_sb_pop(gptCtx->sbtColorStack);
+    }
+}
+
+void
 pl_set_default_font(plFont* ptFont)
 {
     gptCtx->ptFont = ptFont;

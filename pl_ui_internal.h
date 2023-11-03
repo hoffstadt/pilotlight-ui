@@ -83,7 +83,8 @@ Index of this file:
 
 // basic types
 typedef struct _plUiStyle          plUiStyle;
-typedef struct _plUiColorScheme    plUiColorScheme;
+typedef union  _plUiColorScheme    plUiColorScheme;
+typedef struct _plUiColorStackItem plUiColorStackItem;
 typedef struct _plUiWindow         plUiWindow;
 typedef struct _plUiTabBar         plUiTabBar;
 typedef struct _plUiPrevItemData   plUiPrevItemData;
@@ -91,7 +92,7 @@ typedef struct _plUiNextWindowData plUiNextWindowData;
 typedef struct _plUiTempWindowData plUiTempWindowData;
 typedef struct _plUiStorage        plUiStorage;
 typedef struct _plUiStorageEntry   plUiStorageEntry;
-typedef struct _plUiInputTextState   plUiInputTextState;
+typedef struct _plUiInputTextState plUiInputTextState;
 
 // enums
 typedef int plUiNextWindowFlags;
@@ -444,31 +445,41 @@ typedef struct _plInputEvent
 
 } plInputEvent;
 
-typedef struct _plUiColorScheme
+typedef struct  _plUiColorStackItem
 {
-    plVec4 tTitleActiveCol;
-    plVec4 tTitleBgCol;
-    plVec4 tTitleBgCollapsedCol;
-    plVec4 tWindowBgColor;
-    plVec4 tWindowBorderColor;
-    plVec4 tChildBgColor;
-    plVec4 tButtonCol;
-    plVec4 tButtonHoveredCol;
-    plVec4 tButtonActiveCol;
-    plVec4 tTextCol;
-    plVec4 tProgressBarCol;
-    plVec4 tCheckmarkCol;
-    plVec4 tFrameBgCol;
-    plVec4 tFrameBgHoveredCol;
-    plVec4 tFrameBgActiveCol;
-    plVec4 tHeaderCol;
-    plVec4 tHeaderHoveredCol;
-    plVec4 tHeaderActiveCol;
-    plVec4 tScrollbarBgCol;
-    plVec4 tScrollbarHandleCol;
-    plVec4 tScrollbarFrameCol;
-    plVec4 tScrollbarActiveCol;
-    plVec4 tScrollbarHoveredCol;
+    plUiColor tIndex;
+    plVec4    tColor;
+} plUiColorStackItem;
+
+typedef union _plUiColorScheme
+{
+    struct 
+    {
+        plVec4 tTitleActiveCol;
+        plVec4 tTitleBgCol;
+        plVec4 tTitleBgCollapsedCol;
+        plVec4 tWindowBgColor;
+        plVec4 tWindowBorderColor;
+        plVec4 tChildBgColor;
+        plVec4 tButtonCol;
+        plVec4 tButtonHoveredCol;
+        plVec4 tButtonActiveCol;
+        plVec4 tTextCol;
+        plVec4 tProgressBarCol;
+        plVec4 tCheckmarkCol;
+        plVec4 tFrameBgCol;
+        plVec4 tFrameBgHoveredCol;
+        plVec4 tFrameBgActiveCol;
+        plVec4 tHeaderCol;
+        plVec4 tHeaderHoveredCol;
+        plVec4 tHeaderActiveCol;
+        plVec4 tScrollbarBgCol;
+        plVec4 tScrollbarHandleCol;
+        plVec4 tScrollbarFrameCol;
+        plVec4 tScrollbarActiveCol;
+        plVec4 tScrollbarHoveredCol;
+    };
+    plVec4 atColors[23];
 } plUiColorScheme;
 
 typedef struct _plUiStyle
@@ -690,6 +701,9 @@ typedef struct _plUiContext
     // tabs
     plUiTabBar*        sbtTabBars;             // stretchy-buffer for persistent tab bar data
     plUiTabBar*        ptCurrentTabBar;        // current tab bar being appended to
+
+    // theme stacks
+    plUiColorStackItem* sbtColorStack;
 
     // drawing
     plDrawList*        ptDrawlist;             // main ui drawlist
