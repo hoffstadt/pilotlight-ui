@@ -171,6 +171,8 @@ bool           pl_checkbox        (const char* pcText, bool* pbValue);
 bool           pl_radio_button    (const char* pcText, int* piValue, int iButtonValue);
 void           pl_image           (plTextureId tTexture, plVec2 tSize);
 void           pl_image_ex        (plTextureId tTexture, plVec2 tSize, plVec2 tUv0, plVec2 tUv1, plVec4 tTintColor, plVec4 tBorderColor);
+bool           pl_image_button    (const char* pcId, plTextureId tTexture, plVec2 tSize);
+bool           pl_image_button_ex (const char* pcId, plTextureId tTexture, plVec2 tSize, plVec2 tUv0, plVec2 tUv1, plVec4 tTintColor, plVec4 tBorderColor);
 bool           pl_invisible_button(const char* pcText, plVec2 tSize);
 void           pl_dummy           (plVec2 tSize);
 

@@ -2175,6 +2175,43 @@ pl_image_ex(plTextureId tTexture, plVec2 tSize, plVec2 tUv0, plVec2 tUv1, plVec4
 }
 
 bool
+pl_image_button(const char* pcId, plTextureId tTexture, plVec2 tSize)
+{
+    return pl_image_button_ex(pcId, tTexture, tSize, (plVec2){0}, (plVec2){1.0f, 1.0f}, (plVec4){1.0f, 1.0f, 1.0f, 1.0f}, (plVec4){0});
+}
+
+bool
+pl_image_button_ex(const char* pcId, plTextureId tTexture, plVec2 tSize, plVec2 tUv0, plVec2 tUv1, plVec4 tTintColor, plVec4 tBorderColor)
+{
+    plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
+    const plVec2 tStartPos = pl__ui_get_cursor_pos();
+
+    const plVec2 tFinalPos = plu_add_vec2(tStartPos, tSize);
+
+    bool bPressed = false;
+    if(!(tFinalPos.y < ptWindow->tPos.y || tStartPos.y > ptWindow->tPos.y + ptWindow->tFullSize.y))
+    {
+
+        const uint32_t uHash = plu_str_hash(pcId, 0, plu_sb_top(gptCtx->sbuIdStack));
+        plRect tBoundingBox = plu_calculate_rect(tStartPos, tSize);
+        const plRect* ptClipRect = pl_get_clip_rect(gptCtx->ptDrawlist);
+        tBoundingBox = plu_rect_clip_full(&tBoundingBox, ptClipRect);
+
+        bool bHovered = false;
+        bool bHeld = false;
+        bPressed = pl_button_behavior(&tBoundingBox, uHash, &bHovered, &bHeld);
+
+        pl_add_image_ex(ptWindow->ptFgLayer, tTexture, tStartPos, tFinalPos, tUv0, tUv1, tTintColor);
+
+        if(tBorderColor.a > 0.0f)
+            pl_add_rect(ptWindow->ptFgLayer, tStartPos, tFinalPos, tBorderColor, 1.0f);
+
+    }
+    pl_advance_cursor(tSize.x, tSize.y);
+    return bPressed;
+}
+
+bool
 pl_invisible_button(const char* pcText, plVec2 tSize)
 {
     plUiWindow* ptWindow = gptCtx->ptCurrentWindow;
