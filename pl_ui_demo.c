@@ -1,7 +1,7 @@
 #include "pl_ui_internal.h"
 
 void
-pl_debug(bool* pbOpen)
+pl_show_debug_window(bool* pbOpen)
 {
     // tools
     static bool bShowDebugLog = false;
@@ -15,7 +15,7 @@ pl_debug(bool* pbOpen)
 
         const float pfRatios[] = {1.0f};
         pl_layout_row(PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, 0.0f, 1, pfRatios);
-        pl_text("%.6f ms", gptCtx->tIO.fDeltaTime);
+        pl_text("%.3f ms/frame (%0.1f FPS)", gptCtx->tIO.fDeltaTime * 1000.0f, gptCtx->tIO.fFrameRate);
         pl_layout_row(PL_UI_LAYOUT_ROW_TYPE_DYNAMIC, 0.0f, 1, pfRatios);
         pl_text("%u allocations", gptCtx->uMemoryAllocations);
 
@@ -50,7 +50,7 @@ pl_debug(bool* pbOpen)
 
         if(pl_tree_node("Tools"))
         {
-            pl_checkbox("Debug Log", &bShowDebugLog);
+            pl_checkbox("Show Debug Log", &bShowDebugLog);
             pl_tree_pop();
         }
 
@@ -147,11 +147,11 @@ pl_debug(bool* pbOpen)
     } 
 
     if(bShowDebugLog)
-        pl_log(&bShowDebugLog);
+        pl_show_debug_log_window(&bShowDebugLog);
 }
 
 void
-pl_style(bool* pbOpen)
+pl_show_style_editor_window(bool* pbOpen)
 {
 
     if(pl_begin_window("Pilot Light UI Style", pbOpen, 0))
@@ -198,7 +198,7 @@ pl_style(bool* pbOpen)
 }
 
 void
-pl_demo(bool* pbOpen)
+pl_show_demo_window(bool* pbOpen)
 {
     if(pl_begin_window("UI Demo", pbOpen, 0))
     {
@@ -584,7 +584,7 @@ pl_demo(bool* pbOpen)
 }
 
 void
-pl_log(bool* pbOpen)
+pl_show_debug_log_window(bool* pbOpen)
 {
 
     static bool bAutoScroll = true;

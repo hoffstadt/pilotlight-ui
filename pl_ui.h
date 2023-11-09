@@ -1,8 +1,8 @@
 // pilotlight ui
 
 // library version
-#define PL_UI_VERSION    "0.2.1"
-#define PL_UI_VERSION_NUM 000201
+#define PL_UI_VERSION    "0.3.0"
+#define PL_UI_VERSION_NUM 000300
 
 /*
 Index of this file:
@@ -108,10 +108,10 @@ void           pl_end_frame(void); // ends pilotlight ui frame, automatically ca
 void           pl_render   (void); // submits draw layers, you can then submit the ptDrawlist & ptDebugDrawlist from context
 
 // tools
-void           pl_debug(bool* pbOpen);
-void           pl_style(bool* pbOpen);
-void           pl_demo (bool* pbOpen);
-void           pl_log  (bool* pbOpen);
+void           pl_show_debug_window       (bool* pbOpen);
+void           pl_show_style_editor_window(bool* pbOpen);
+void           pl_show_demo_window        (bool* pbOpen);
+void           pl_show_debug_log_window   (bool* pbOpen);
 
 // styling
 void           pl_set_dark_theme  (void);

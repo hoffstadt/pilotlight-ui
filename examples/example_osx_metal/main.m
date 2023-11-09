@@ -500,8 +500,8 @@ DispatchRenderLoop(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const C
             pl_new_draw_frame_metal(tGraphics.drawableRenderDescriptor);
             pl_new_frame();
 
-            pl_demo(NULL);
-            pl_debug(NULL);
+            pl_show_demo_window(NULL);
+            pl_show_debug_window(NULL);
 
             pl_add_line(fgDrawLayer, (plVec2){0}, (plVec2){300.0f, 300.0f}, (plVec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
 
