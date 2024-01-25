@@ -54,7 +54,7 @@ void            pl_cleanup_vulkan_font_texture(plFontAtlas* ptAtlas);
 void            pl_new_draw_frame_vulkan      (void);
 void            pl_submit_vulkan_drawlist     (plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex);
 void            pl_submit_vulkan_drawlist_ex  (plDrawList* ptDrawlist, float fWidth, float fHeight, VkCommandBuffer tCmdBuf, uint32_t uFrameIndex, VkRenderPass tRenderPass, VkSampleCountFlagBits tMSAASampleCount);
-VkDescriptorSet pl_add_texture                (VkImageView tImageView, VkImageLayout tImageLayout);
+VkDescriptorSet pl_add_texture                (VkImageView tImageView, VkSampler tSampler, VkImageLayout tImageLayout);
 
 #ifdef __cplusplus
 }

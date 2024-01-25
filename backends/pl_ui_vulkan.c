@@ -778,7 +778,7 @@ pl_cleanup_vulkan(void)
 }
 
 VkDescriptorSet
-pl_add_texture(VkImageView tImageView, VkImageLayout tImageLayout)
+pl_add_texture(VkImageView tImageView, VkSampler tSampler, VkImageLayout tImageLayout)
 {
     plUiContext* ptCtx = pl_get_context();
     plVulkanDrawContext* ptVulkanDrawCtx = ptCtx->tIO.pBackendRendererData;
@@ -795,7 +795,7 @@ pl_add_texture(VkImageView tImageView, VkImageLayout tImageLayout)
     VkResult tErr = vkAllocateDescriptorSets(ptVulkanDrawCtx->tDevice, &tAllocInfo, &tDescriptorSet);
 
     const VkDescriptorImageInfo tDescImage = {
-        .sampler     = ptVulkanDrawCtx->tFontSampler,
+        .sampler     = tSampler,
         .imageView   = tImageView,
         .imageLayout = tImageLayout
     };
@@ -988,7 +988,7 @@ pl_create_vulkan_font_texture(plFontAtlas* ptAtlas)
     };
     PL_VULKAN(vkCreateImageView(ptVulkanDrawCtx->tDevice, &tViewInfo, NULL, &ptVulkanDrawCtx->tFontTextureImageView));
 
-    ptCtx->fontAtlas->tTexture = pl_add_texture(ptVulkanDrawCtx->tFontTextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    ptCtx->fontAtlas->tTexture = pl_add_texture(ptVulkanDrawCtx->tFontTextureImageView, ptVulkanDrawCtx->tFontSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 //-----------------------------------------------------------------------------
