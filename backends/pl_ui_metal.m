@@ -206,6 +206,7 @@ pl_submit_metal_drawlist(plDrawList* drawlist, float width, float height, id<MTL
     [renderEncoder setVertexBytes:&ortho_projection length:sizeof(ortho_projection) atIndex:1 ];
     [renderEncoder setDepthStencilState:metalCtx.depthStencilState];
     [renderEncoder setVertexBuffer:vertexBuffer.buffer offset:0 atIndex:0];
+    [renderEncoder setTriangleFillMode:MTLTriangleFillModeFill];
 
     bool sdf = false;
     const plVec2 tClipScale = ptCtx->tFrameBufferScale;
